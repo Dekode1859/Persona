@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Job Record (v1)",
+  "description": "A tracked job. Split in two layers, mirroring profile.schema.json: the `job-extract` agent emits the extracted fields from a scraped page dump; the app owns identity/state/provenance fields and NEVER trusts them to the agent. `description` holds the full JD prose and is the input consumed by the jd-match and resume-composer agents — it must always be populated.",
+  "type": "object",
+  "required": ["id", "title", "company", "link", "description", "status", "created_at"],
+  "properties": {
+    "id":         { "type": "string", "description": "App-assigned. Date.now() string." },
+    "created_at": { "type": "string", "description": "App-assigned ISO timestamp." },
+    "status":     { "type": "string", "description": "App-managed lifecycle: saved | applied | interviewing | rejected | offer (see STATUS_LABELS in app.js)." },
+    "link":       { "type": "string", "description": "App-set from the pasted/source URL. The agent never invents this." },
+
+    "title":      { "type": "string", "description": "Role title." },
+    "company":    { "type": "string" },
+    "location":   { "type": "string" },
+    "workplace_type":  { "type": "string", "enum": ["remote", "hybrid", "onsite", ""] },
+    "employment_type": { "type": "string", "enum": ["full-time", "part-time", "contract", "internship", ""] },
+    "seniority":       { "type": "string", "enum": ["intern", "junior", "mid", "senior", "lead", ""] },
+
+    "compensation": {
+      "type": "object",
+      "description": "Pay info if the posting states it. `raw` is the verbatim string; the rest are parsed when unambiguous.",
+      "properties": {
+        "raw":      { "type": "string" },
+        "min":      { "type": ["number", "null"] },
+        "max":      { "type": ["number", "null"] },
+        "currency": { "type": "string", "description": "ISO-ish code or symbol, e.g. USD, INR, $" },
+        "period":   { "type": "string", "enum": ["year", "month", "hour", ""] }
+      }
+    },
+
+    "description":      { "type": "string", "description": "Full JD prose, preserved verbatim. Consumed by jd-match and resume-composer." },
+    "responsibilities": { "type": "array", "items": { "type": "string" } },
+    "requirements":     { "type": "array", "items": { "type": "string" }, "description": "Must-haves." },
+    "nice_to_have":     { "type": "array", "items": { "type": "string" } },
+    "skills":           { "type": "array", "items": { "type": "string" }, "description": "Flat skill/tech keyword list — powers analytics." },
+
+    "posted_date":          { "type": "string" },
+    "application_deadline": { "type": "string" },
+    "apply_url":            { "type": "string", "description": "Distinct apply link if the page exposes one separate from `link`." },
+    "source":               { "type": "string", "description": "linkedin | greenhouse | lever | wellfound | bare domain." },
+
+    "source_url":  { "type": "string", "description": "Provenance: the exact URL that was scraped." },
+    "scraped_at":  { "type": "string", "description": "Provenance: ISO timestamp of the scrape." },
+    "extraction": {
+      "type": "object",
+      "description": "Provenance about how this record was produced.",
+      "properties": {
+        "method":        { "type": "string", "enum": ["paste", "manual"] },
+        "chars_scraped": { "type": ["number", "null"] },
+        "retried":       { "type": "boolean" }
+      }
+    },
+
+    "match_score":         { "type": ["integer", "null"] },
+    "match_result":        { "type": ["object", "null"] },
+    "screening_risks":     { "type": "array" },
+    "analysis_meta":       { "type": ["object", "null"] },
+    "analysis_ignored_skills": { "type": "array", "items": { "type": "string" } },
+    "last_analysis_run_id": { "type": ["string", "null"] },
+    "last_analysis_at":     { "type": ["string", "null"] },
+    "score_history":       { "type": "array" },
+    "resume_draft":        { "type": ["object", "null"] },
+    "resume_extra_skills": { "type": "array", "items": { "type": "string" } }
+  }
+}

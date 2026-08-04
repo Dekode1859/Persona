@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en" class="sl-theme-dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Persona</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.19.1/cdn/themes/dark.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <aside id="sidebar">
+    <div class="sidebar-shell">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg class="brand-icon" viewBox="0 0 28 28" fill="none">
+            <defs>
+              <linearGradient id="brand-grad-blue" x1="6" y1="5" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#4ea2ff"/>
+                <stop offset="1" stop-color="#2b67ff"/>
+              </linearGradient>
+              <linearGradient id="brand-grad-green" x1="8" y1="10" x2="21" y2="20" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#37d38b"/>
+                <stop offset="1" stop-color="#1d8e67"/>
+              </linearGradient>
+              <linearGradient id="brand-grad-amber" x1="4" y1="9" x2="13" y2="18" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#ffc25d"/>
+                <stop offset="1" stop-color="#f39a29"/>
+              </linearGradient>
+            </defs>
+            <path d="M17.3 3.7c2.5 0 4.7 2 4.7 4.6 0 1.2-.4 2.2-1.1 3.1l-3 3a4.6 4.6 0 0 1-6.6 0 4.7 4.7 0 0 1 0-6.6l2.7-2.7a4.6 4.6 0 0 1 3.3-1.4Z" fill="url(#brand-grad-blue)"/>
+            <path d="M10.6 11.2a4.6 4.6 0 0 1 6.6 0 4.7 4.7 0 0 1 0 6.6l-2.6 2.6a4.6 4.6 0 0 1-6.6 0 4.7 4.7 0 0 1 0-6.6l2.6-2.6Z" fill="url(#brand-grad-green)"/>
+            <path d="M7.2 8.3c1.1 0 2.2.4 3.1 1.3a4.4 4.4 0 0 1 0 6.2l-1.9 1.9a4.4 4.4 0 0 1-6.2 0 4.4 4.4 0 0 1 0-6.2l1.9-1.9a4.4 4.4 0 0 1 3.1-1.3Z" fill="url(#brand-grad-amber)"/>
+          </svg>
+        </div>
+        <div class="brand-copy">
+          <span class="brand-text">Persona</span>
+        </div>
+        <button id="btn-sidebar-collapse" class="sidebar-collapse-btn" title="Collapse sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg>
+        </button>
+      </div>
+
+      <div class="sidebar-label">Workspace</div>
+      <nav id="nav">
+        <button class="nav-item active" data-view="profile">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+          <span class="nav-label">Profile</span>
+        </button>
+        <button class="nav-item" data-view="jobs">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+          <span class="nav-label">Jobs</span>
+        </button>
+        <button class="nav-item" data-view="scanner">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <span class="nav-label">Scanner</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-meta-card">
+        <div class="sidebar-meta-title">Active model</div>
+        <div id="model-badge" title="Change model in Settings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
+          <span id="model-badge-text">-</span>
+        </div>
+      </div>
+
+      <div id="sidebar-footer">
+        <button class="nav-item utility-item" id="btn-settings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="nav-label">Settings</span>
+        </button>
+      </div>
+    </div>
+    <div id="sidebar-resize-handle"></div>
+  </aside>
+
+  <div id="workspace-shell">
+    <main id="main">
+
+      <section id="view-profile" class="view active">
+        <div id="profile-main">
+          <header class="view-header">
+            <div class="view-header-row">
+              <div>
+                <h1>Profile</h1>
+                <p class="view-sub">Your master profile - every role, skill, and project in one place.</p>
+              </div>
+              <div class="view-header-actions">
+                <sl-button id="btn-add-info">
+                  <sl-icon slot="prefix" library="lucide" name="plus"></sl-icon> Add Info
+                </sl-button>
+                <sl-button id="btn-export-profile" variant="primary">
+                  <sl-icon slot="prefix" library="lucide" name="file-down"></sl-icon> Export Resume
+                </sl-button>
+              </div>
+            </div>
+          </header>
+          <div id="profile-empty-state" class="empty">
+            <sl-icon library="lucide" name="user-round" class="empty-icon"></sl-icon>
+            <div class="empty-title">Profile is empty</div>
+            <div class="empty-sub">Click "Add Info" to upload a resume or paste text - it will be extracted and merged here.</div>
+          </div>
+          <div id="profile-sections" class="profile-sections hidden"></div>
+        </div>
+
+        <div id="profile-ingest" class="hidden">
+          <header class="view-header">
+            <button class="back-btn" id="btn-back-from-ingest">
+              <sl-icon library="lucide" name="arrow-left"></sl-icon> Profile
+            </button>
+            <h1>Add Info</h1>
+            <p class="view-sub">New information merges into your profile without overwriting existing entries.</p>
+          </header>
+          <div class="panel" style="max-width:660px">
+            <div class="panel-title">
+              <sl-icon library="lucide" name="file-plus"></sl-icon> Documents
+            </div>
+            <label id="dropzone" for="file-input">
+              <sl-icon library="lucide" name="upload-cloud"></sl-icon>
+              <span class="dz-main">Drop files or click to upload</span>
+              <span class="dz-sub">.txt, .md, .json - multiple allowed</span>
+            </label>
+            <input id="file-input" type="file" multiple accept=".txt,.md,.json,.markdown" hidden />
+            <div class="paste-wrap">
+              <div class="paste-label">...or paste resume / bio text</div>
+              <textarea id="paste-text" placeholder="Paste resume text here"></textarea>
+            </div>
+            <div id="doc-list"></div>
+            <sl-button id="btn-generate" variant="primary" size="medium" disabled style="width:100%;margin-top:4px">
+              <sl-icon slot="prefix" library="lucide" name="wand-2"></sl-icon>
+              Add to Profile
+            </sl-button>
+            <div id="gen-status" class="gen-status hidden"></div>
+          </div>
+        </div>
+
+        <div id="profile-export" class="hidden">
+          <header class="view-header">
+            <button class="back-btn" id="btn-back-from-export">
+              <sl-icon library="lucide" name="arrow-left"></sl-icon> Profile
+            </button>
+            <div class="view-header-row">
+              <div id="export-header-copy">
+                <h1>Export Resume</h1>
+                <p class="view-sub">Pick what goes on the page. Not tied to any job.</p>
+              </div>
+            </div>
+          </header>
+          <div id="profile-export-mount"></div>
+        </div>
+      </section>
+
+      <section id="view-jobs" class="view">
+        <div id="jobs-dashboard">
+          <header class="view-header">
+            <div class="view-header-row">
+              <div>
+                <h1>Jobs</h1>
+                <p class="view-sub">Track and score the roles you're pursuing.</p>
+              </div>
+              <sl-button variant="primary" id="btn-add-job">
+                <sl-icon slot="prefix" library="lucide" name="plus"></sl-icon> Add Job
+              </sl-button>
+            </div>
+          </header>
+          <div id="jobs-empty-state" class="empty">
+            <sl-icon library="lucide" name="list-plus" class="empty-icon"></sl-icon>
+            <div class="empty-title">No jobs yet</div>
+            <div class="empty-sub">Add a job description and we'll score it against your profile.</div>
+          </div>
+          <div id="job-cards" class="job-cards-grid hidden"></div>
+        </div>
+
+        <div id="jobs-add" class="hidden">
+          <header class="view-header">
+            <button class="back-btn" id="btn-back-from-add">
+              <sl-icon library="lucide" name="arrow-left"></sl-icon> Jobs
+            </button>
+            <h1>Add Job</h1>
+            <p class="view-sub">Fill in what you have - description is the only required field.</p>
+          </header>
+          <div class="about-grid">
+            <div class="panel">
+              <div class="panel-title">
+                <sl-icon library="lucide" name="file-plus"></sl-icon> Job Details
+              </div>
+              <div class="form-field">
+                <label class="field-label">Role title <span class="field-optional">(optional)</span></label>
+                <input id="add-job-title" type="text" class="field-input"
+                  placeholder="e.g. Senior Backend Engineer" />
+              </div>
+              <div class="form-field">
+                <label class="field-label">Company <span class="field-optional">(optional)</span></label>
+                <input id="add-job-company" type="text" class="field-input" placeholder="e.g. Stripe" />
+              </div>
+              <div class="form-field">
+                <label class="field-label">Apply link <span class="field-optional">(optional)</span></label>
+                <input id="add-job-link" type="url" class="field-input" placeholder="https://..." />
+              </div>
+              <div class="form-field">
+                <label class="field-label">Job description <span class="field-required">*</span></label>
+                <textarea id="add-job-desc" class="jd-textarea"
+                  placeholder="Paste the full job posting here..."></textarea>
+              </div>
+              <sl-button id="btn-save-job" variant="primary" size="medium" disabled style="width:100%;margin-top:4px">
+                <sl-icon slot="prefix" library="lucide" name="save"></sl-icon> Save & Analyze
+              </sl-button>
+              <div id="add-job-status-msg" class="gen-status hidden"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">
+                <sl-icon library="lucide" name="target"></sl-icon> Match Analysis
+              </div>
+              <div id="add-job-match-empty" class="empty" style="padding:32px 12px">
+                <sl-icon library="lucide" name="sparkles" class="empty-icon"></sl-icon>
+                <div class="empty-title">Analysis will appear here</div>
+                <div class="empty-sub">Runs automatically after you save the job.</div>
+              </div>
+              <div id="add-job-match-results" class="hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="jobs-detail" class="hidden">
+          <header class="view-header detail-header">
+            <button class="back-btn" id="btn-back-from-detail">
+              <sl-icon library="lucide" name="arrow-left"></sl-icon> Jobs
+            </button>
+            <div id="detail-header-info"></div>
+            <div class="detail-header-actions">
+              <div class="job-status-wrap">
+                <span id="detail-status-badge" class="job-status-badge"></span>
+                <select id="detail-status-select" class="job-status-select"></select>
+              </div>
+              <button id="btn-delete-job" class="job-delete-icon" title="Delete job">
+                <sl-icon library="lucide" name="trash-2"></sl-icon>
+              </button>
+            </div>
+          </header>
+          <nav class="detail-tabs">
+            <button class="detail-tab active" data-tab="analysis">Analysis</button>
+            <button class="detail-tab" data-tab="resume">Resume</button>
+          </nav>
+
+          <div id="tab-analysis" class="detail-tab-pane">
+            <div id="detail-match-empty" class="empty">
+              <sl-icon library="lucide" name="sparkles" class="empty-icon"></sl-icon>
+              <div class="empty-title">No analysis yet</div>
+              <div class="empty-sub">Run an analysis to score this job against your profile.</div>
+            </div>
+            <div id="detail-match-results" class="hidden mc-grid"></div>
+          </div>
+
+          <div id="tab-resume" class="detail-tab-pane hidden">
+            <div id="job-resume-mount"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="view-scanner" class="view">
+        <div class="scanner-shell">
+          <div class="scanner-header">
+            <div>
+              <h2>Scanner</h2>
+              <p class="scanner-sub">Headlessly pulls jobs from your logged-in LinkedIn session. Review results here before adding them to Jobs.</p>
+            </div>
+            <div class="scanner-actions">
+              <span id="scanner-status" class="scanner-status"></span>
+              <sl-button id="btn-scanner-run" variant="primary">
+                <svg slot="prefix" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                Scan now
+              </sl-button>
+            </div>
+          </div>
+
+          <div class="scanner-settings">
+            <div class="scanner-settings-row">
+              <sl-checkbox id="scanner-include-recommended" checked>Include LinkedIn's recommended-for-you feed</sl-checkbox>
+            </div>
+            <div id="scanner-searches" class="scanner-searches"></div>
+            <sl-button id="btn-scanner-add-search" size="small">
+              <svg slot="prefix" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              Add search
+            </sl-button>
+          </div>
+
+          <div id="scanner-feed" class="scanner-feed"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<sl-dialog id="analysis-history-dialog" label="Saved Analysis Snapshot" style="--width: 820px">
+  <div id="analysis-history-dialog-body"></div>
+  <sl-button slot="footer" id="btn-close-analysis-history">Close</sl-button>
+</sl-dialog>
+
+<sl-dialog id="settings-dialog" label="Settings" style="--width: 540px">
+
+  <div class="settings-section">
+    <h3><sl-icon library="lucide" name="key-round"></sl-icon> Providers</h3>
+    <p class="settings-hint">Connect an LLM provider so the agent can run. OpenCode Zen is free and needs no key.</p>
+    <div id="connected-list"></div>
+    <div class="settings-row">
+      <sl-select id="provider-select" placeholder="Choose a provider" hoist></sl-select>
+    </div>
+    <div class="settings-row">
+      <sl-input id="api-key" type="password" placeholder="API key" password-toggle></sl-input>
+      <sl-button id="btn-save-key" variant="primary">
+        <sl-icon slot="prefix" library="lucide" name="plug"></sl-icon> Connect
+      </sl-button>
+    </div>
+    <div id="auth-status" class="status-text"></div>
+  </div>
+
+  <div class="settings-divider"></div>
+
+  <div class="settings-section">
+    <h3><sl-icon library="lucide" name="cpu"></sl-icon> Model</h3>
+    <p class="settings-hint">Pick the model the profile agent uses. Current: <strong id="current-model">-</strong></p>
+    <div class="settings-row">
+      <sl-select id="model-provider" placeholder="Provider" hoist></sl-select>
+      <sl-select id="model-select" placeholder="Model" hoist disabled></sl-select>
+    </div>
+    <sl-button id="btn-set-model" variant="primary" disabled>
+      <sl-icon slot="prefix" library="lucide" name="check"></sl-icon> Set as default
+    </sl-button>
+    <div id="model-status" class="status-text"></div>
+  </div>
+
+  <div class="settings-divider"></div>
+
+  <div class="settings-section">
+    <h3><sl-icon library="lucide" name="monitor"></sl-icon> Job Site Sign-in</h3>
+    <p class="settings-hint">Sign in once so job links that require an account - LinkedIn especially - can be read when you paste them.</p>
+    <div id="browser-profile-section-content"></div>
+  </div>
+
+  <div class="settings-divider"></div>
+
+  <div class="settings-section">
+    <h3><sl-icon library="lucide" name="clipboard-paste"></sl-icon> Paste to Analyze</h3>
+    <p class="settings-hint">On the Jobs page, paste a job link (Ctrl/Cmd+V) to scrape and add it automatically.</p>
+    <sl-switch id="auto-analyze-toggle">
+      Score pasted jobs automatically
+    </sl-switch>
+  </div>
+
+  <sl-button slot="footer" id="btn-settings-close">Close</sl-button>
+</sl-dialog>
+
+<sl-dialog id="reset-browser-dialog" style="--width: 420px">
+  <div id="reset-browser-dialog-body" style="line-height:1.6"></div>
+  <div slot="footer" style="display:flex;gap:8px;justify-content:flex-end">
+    <sl-button id="btn-reset-profile-cancel">Cancel</sl-button>
+    <sl-button id="btn-reset-profile-confirm" variant="danger">Delete</sl-button>
+  </div>
+</sl-dialog>
+
+<sl-dialog id="delete-job-dialog" label="Delete job?" style="--width: 440px">
+  <div id="delete-job-dialog-body" style="line-height:1.6"></div>
+  <div slot="footer" style="display:flex;gap:8px;justify-content:flex-end">
+    <sl-button id="btn-delete-job-cancel">Cancel</sl-button>
+    <sl-button id="btn-delete-job-confirm" variant="danger">Delete</sl-button>
+  </div>
+</sl-dialog>
+
+<sl-dialog id="paste-job-dialog" label="Analyze this job?" style="--width: 480px">
+  <p class="settings-hint" style="margin-top:0">Detected a job link in your clipboard. Scrape the page and add it as a tracked job?</p>
+  <div style="background:var(--surface-2,#1c1c22);border-radius:8px;padding:10px 12px;word-break:break-all;font-size:13px;line-height:1.5" id="paste-job-url"></div>
+  <p class="settings-hint" style="margin-bottom:0">Runs in the background - you can keep working while it's added.</p>
+  <div slot="footer" style="display:flex;gap:8px;justify-content:flex-end">
+    <sl-button id="btn-paste-cancel">Cancel</sl-button>
+    <sl-button id="btn-paste-analyze" variant="primary">
+      <sl-icon slot="prefix" library="lucide" name="sparkles"></sl-icon> Analyze
+    </sl-button>
+  </div>
+</sl-dialog>
+
+<sl-dialog id="dup-job-dialog" label="Job already saved" style="--width: 460px">
+  <p class="settings-hint" style="margin-top:0">You already have this job saved: <strong id="dup-job-name"></strong>. Open it, or re-scrape and update it with the latest page content?</p>
+  <div slot="footer" style="display:flex;gap:8px;justify-content:flex-end">
+    <sl-button id="btn-dup-visit" variant="primary">
+      <sl-icon slot="prefix" library="lucide" name="external-link"></sl-icon> Visit job
+    </sl-button>
+    <sl-button id="btn-dup-update">
+      <sl-icon slot="prefix" library="lucide" name="refresh-cw"></sl-icon> Update job
+    </sl-button>
+  </div>
+</sl-dialog>
+
+<div id="toast" class="hidden"></div>
+
+<script type="module">
+import { registerIconLibrary } from 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.19.1/cdn/utilities/icon-library.js';
+registerIconLibrary('lucide', {
+  resolver: name => `https://cdn.jsdelivr.net/npm/lucide-static@0.441.0/icons/${name}.svg`,
+  mutator: svg => svg.setAttribute('stroke', 'currentColor'),
+});
+</script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.19.1/cdn/shoelace-autoloader.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

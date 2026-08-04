@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Template</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════
+       LAYOUT CONSTANTS — all sizing lives here as CSS custom properties.
+       Tweak these numbers to adjust the whole page without touching the JS.
+       ═══════════════════════════════════════════════════════════════════════ */
+    :root {
+      /* Page dimensions — US Letter @ 96 dpi */
+      --page-width:   816px;
+      --page-height:  1056px;
+
+      /* Page padding — mirrors .4in top/bottom, .5in sides */
+      --pad-v:        16px;
+      --pad-h:        12px;
+
+      /* Typography */
+      --font:         Arial, Helvetica, sans-serif;
+      --size-name:    20pt;
+      --size-contact: 9.5pt;
+      --size-section: 11pt;
+      --size-body:    9.5pt;
+      --size-small:   10pt;
+      --line-height:  1.35;
+
+      /* Spacing */
+      --gap-section:  7px;    /* vertical gap between sections */
+      --gap-entry:    5px;    /* vertical gap between exp/proj entries */
+      --gap-title:    5px;    /* gap below section title before content */
+      --indent-list:  18px;   /* ol / ul left indent */
+      --gap-bullet:   1px;    /* line gap inside a bullet list */
+    }
+
+    /* ── Screen frame ──────────────────────────────────────────────────── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #a0a0a0;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 24px;
+    }
+
+    #rp-scale-wrap { flex-shrink: 0; }
+
+    /* ── Page ──────────────────────────────────────────────────────────── */
+    .rp-page {
+      width:       var(--page-width);
+      min-height:  var(--page-height);
+      background:  #fff;
+      box-shadow:  0 4px 24px rgba(0,0,0,0.45);
+      padding:     var(--pad-v) var(--pad-h);
+      font-family: var(--font);
+      font-size:   var(--size-body);
+      line-height: var(--line-height);
+      color:       #000;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────── */
+    .rp-header { text-align: center; margin-bottom: 7px; }
+
+    .rp-name {
+      font-size:   var(--size-name);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 3px;
+    }
+
+    .rp-contact {
+      font-size:   var(--size-contact);
+      color:       #222;
+      line-height: 1.5;
+    }
+    .rp-contact a { color: #222; text-decoration: none; }
+    .rp-contact a:hover { text-decoration: underline; }
+
+    /* ── Section ───────────────────────────────────────────────────────── */
+    .rp-section { margin-bottom: var(--gap-section); }
+
+    .rp-section-title {
+      font-size:     var(--size-section);
+      font-weight:   700;
+      border-bottom: 1.5px solid #000;
+      padding-bottom: 2px;
+      margin-bottom:  var(--gap-title);
+      line-height:    1.2;
+    }
+
+    /* ── Profile / Summary ─────────────────────────────────────────────── */
+    .rp-prose {
+      font-size:   var(--size-body);
+      /* font-weight: 600; */
+      line-height: 1.4;
+      margin-top:  3px;
+    }
+
+    /* ── Skills — bucketed bullet list ────────────────────────────────── */
+    .rp-skill-list {
+      list-style:  disc;
+      margin-left: var(--indent-list);
+      padding:     0;
+    }
+    .rp-skill-list li {
+      font-size:   var(--size-small);
+      margin:      var(--gap-bullet) 0;
+      line-height: var(--line-height);
+    }
+
+    /* ── Experience / Education entries ───────────────────────────────── */
+    .rp-entry { margin-bottom: var(--gap-entry); }
+    .rp-entry:last-child { margin-bottom: 0; }
+
+    .rp-entry-head {
+      display:         flex;
+      justify-content: space-between;
+      align-items:     baseline;
+      gap:             10px;
+    }
+
+    .rp-exp-label {
+      font-size:  var(--size-body);
+      flex:       1;
+      min-width:  0;
+    }
+
+    .rp-entry-dates {
+      font-size:   var(--size-small);
+      font-style:  italic;
+      color:       #333;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .rp-edu-degree {
+      font-size:  var(--size-small);
+      color:      #333;
+      margin-top: 1px;
+    }
+
+    /* ── Disc bullet lists (experience / project) ──────────────────────── */
+    .rp-bullets {
+      list-style:  disc;
+      margin-left: var(--indent-list);
+      margin-top:  2px;
+      padding:     0;
+    }
+    .rp-bullets li {
+      font-size:   var(--size-small);
+      margin:      var(--gap-bullet) 0;
+      line-height: var(--line-height);
+    }
+
+    /* ── Projects: <ol> numbered ───────────────────────────────────────── */
+    .rp-proj-list {
+      list-style:  decimal;
+      margin-left: var(--indent-list);
+      margin-top:  3px;
+      padding:     0;
+    }
+    .rp-proj-item {
+      margin-bottom: var(--gap-entry);
+      line-height:   var(--line-height);
+    }
+    .rp-proj-item:last-child { margin-bottom: 0; }
+
+    .rp-proj-name {
+      font-size:       var(--size-body);
+      font-weight:     700;
+      text-decoration: underline;
+      color:           #000;
+    }
+    .rp-proj-name:hover { color: #333; }
+
+    .rp-proj-name-plain {
+      font-size:   var(--size-body);
+      font-weight: 700;
+    }
+
+    .rp-proj-stack {
+      display:    block;
+      font-size:  var(--size-small);
+      font-style: italic;
+      color:      #333;
+      margin:     1px 0 2px;
+    }
+
+    /* ── Publications: <ol> numbered ───────────────────────────────────── */
+    .rp-pub-list {
+      list-style:  decimal;
+      margin-left: var(--indent-list);
+      margin-top:  3px;
+      padding:     0;
+    }
+    .rp-pub-item {
+      margin-bottom: 4px;
+      line-height:   var(--line-height);
+    }
+    .rp-pub-item:last-child { margin-bottom: 0; }
+
+    .rp-pub-title {
+      font-size:       var(--size-body);
+      font-weight:     700;
+      text-decoration: underline;
+      color:           #000;
+    }
+    .rp-pub-title:hover { color: #333; }
+
+    .rp-pub-title-plain {
+      font-size:   var(--size-body);
+      font-weight: 700;
+    }
+
+    .rp-pub-venue {
+      display:    block;
+      font-size:  var(--size-small);
+      font-style: italic;
+      color:      #333;
+      margin-top: 1px;
+    }
+
+    /* ── Print: true Letter page, no chrome ────────────────────────────── */
+    @media print {
+      body { background: none; padding: 0; display: block; }
+      #rp-scale-wrap { transform: none !important; height: auto !important; }
+      .rp-page {
+        width:      8.5in;
+        min-height: 11in;
+        padding:    0.375in 0.5in;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="rp-scale-wrap">
+    <div class="rp-page" id="rp-page"></div>
+  </div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   PROFILE DATA
+   Source of truth for all facts: name, company, title, dates, project names,
+   tech stacks, education. Maps 1:1 with profile.json from the app.
+   Never move to SELECTION — the AI never touches this.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const PROFILE = {
+  identity: {
+    name:     "Pratik Dwivedi",
+    headline: "Applied AI Engineer",
+    summary:  "Applied AI Engineer focused on building production-grade AI systems, workflow automation platforms, and cloud-native applications. Experienced in taking projects from ambiguous requirements through architecture, implementation, deployment, and operational ownership. Strong interest in agentic workflows, developer tooling, and scalable backend systems.",
+  },
+  contact: {
+    phone: "+91 XXXXX XXXXX",
+    email: "prateekdwivedi30@gmail.com",
+    links: [
+      { label: "GitHub",   url: "github.com/dekode1859" },
+      { label: "LinkedIn", url: "linkedin.com/in/pratik-dwivedi" },
+    ],
+  },
+  skill_buckets: [
+    { category: "Programming Languages",  skills: ["Python", "TypeScript", "SQL", "Java", "C++"] },
+    { category: "Frameworks & Libraries", skills: ["FastAPI", "React", "Next.js", "PyTorch", "TensorFlow", "XGBoost", "Scikit-Learn", "Hugging Face", "Streamlit", "Unstructured"] },
+    { category: "AI / ML",                skills: ["LlamaIndex", "LangChain", "Ollama"] },
+    { category: "Agentic Frameworks",     skills: ["Agno"] },
+    { category: "Cloud Platforms",        skills: ["AWS"] },
+    { category: "Databases & Storage",    skills: ["PostgreSQL", "PGVector", "Redshift"] },
+    { category: "Tools & DevOps",         skills: ["Docker", "Temporal", "PySpark", "CloudWatch", "Git", "Proxmox", "Cloudflare"] },
+  ],
+  experience: [
+    {
+      id:      "1782322976136e0",
+      company: "Fincepta",
+      title:   "AI Engineer",
+      start:   "June 2024",
+      end:     "Present",
+      highlights: [
+        "Reduced analyst turnaround time from 7 days to 24 hours by designing multi-agent document intelligence system using Agno, LlamaIndex, and Gemini for equipment financing workflows",
+        "Engineered feature generation pipeline producing 10,000+ derived financial indicators for credit underwriting XGBoost models enabling automated loan risk assessment",
+        "Achieved Adobe Acrobat ADA compliance validation for automated PDF compliance pipeline using Gemini and Unstructured",
+        "Designed serverless ETL architecture (AWS CDK, Glue, PySpark, Redshift, QuickSight) enabling near real-time operational monitoring",
+      ],
+    },
+  ],
+  projects: [
+    {
+      id:   "1782322976136p0",
+      name: "Local AI Workflow Infrastructure Platform",
+      url:  "",
+      tech: ["Proxmox", "Docker", "FastAPI", "PostgreSQL", "Temporal", "Cloudflare"],
+      highlights: [
+        "Designed isolated service environments for orchestration, API routing, data persistence, and workflow execution",
+        "Implemented secure API gateways and service-to-service communication patterns",
+        "Created production-like environment for distributed AI systems and workflow reliability experimentation",
+      ],
+    },
+    {
+      id:   "1782322976136p1",
+      name: "Mantis — AI Product Intelligence Platform",
+      url:  "",
+      tech: ["React", "FastAPI", "Temporal", "LangChain", "Ollama", "Cloudflare"],
+      highlights: [
+        "Built asynchronous workflow pipelines using Temporal for monitoring, scheduling, and alerting across e-commerce storefronts",
+        "Designed fault-tolerant extraction and notification systems for large-scale product monitoring",
+        "Integrated self-hosted AI infrastructure to reduce operational costs and increase deployment flexibility",
+      ],
+    },
+  ],
+  education: [
+    {
+      institution: "Bennett University",
+      year:        "May 2025",
+      degree:      "Bachelor of Technology — Computer Science Engineering",
+    },
+  ],
+  publications: [
+    {
+      title: "Enhancing Legal Document Summarization for Professionals",
+      venue: "ICCCNT 2024",
+      year:  "2024",
+      url:   "",
+    },
+    {
+      title: "Air Quality Monitoring using Machine Learning",
+      venue: "ICTACS 2024",
+      year:  "2024",
+      url:   "",
+    },
+  ],
+};
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SELECTION
+   The ONLY thing the AI needs to produce. It contains:
+     - summary       : 2-3 sentences targeted to a specific role
+     - skills        : flat list of skill strings to include (ordered by relevance)
+     - experience    : [{id, bullets?}] — null bullets → use PROFILE highlights
+     - projects      : [{id, bullets?}] — null bullets → use PROFILE highlights
+   Hard caps enforced by renderResume(): max 3 exp, max 3 proj, max 3 bullets.
+   All facts (company, title, dates, project name, tech) come from PROFILE.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const SELECTION = {
+  summary: "Applied AI Engineer with 2+ years of production experience building agentic systems, ML pipelines, and cloud-native backend services. Proven track record of reducing manual workflows by orders of magnitude through intelligent automation and scalable architecture. Strong in Python, FastAPI, LlamaIndex, and AWS; seeking roles at the intersection of AI engineering and systems design.",
+
+  skills: [
+    "Python", "TypeScript", "SQL",
+    "FastAPI", "React", "PyTorch", "XGBoost", "Scikit-Learn", "Hugging Face", "Unstructured",
+    "LlamaIndex", "LangChain", "Agno",
+    "AWS",
+    "PostgreSQL", "PGVector", "Redshift",
+    "Docker", "Temporal", "PySpark", "Git",
+  ],
+
+  experience: [
+    { id: "1782322976136e0", bullets: null },   // null → use PROFILE.experience[*].highlights
+  ],
+
+  projects: [
+    { id: "1782322976136p0", bullets: null },   // null → use PROFILE.projects[*].highlights
+    { id: "1782322976136p1", bullets: null },
+  ],
+};
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RENDER ENGINE
+   Pure function: (profile, selection) → HTML string.
+   No state, no DOM reads. All display decisions hardcoded here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function renderResume(profile, selection) {
+  const id      = profile.identity || {};
+  const contact = profile.contact  || {};
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function esc(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function section(title, body) {
+    return body
+      ? `<div class="rp-section"><div class="rp-section-title">${esc(title)}</div>${body}</div>`
+      : '';
+  }
+
+  function bullets(arr) {
+    if (!arr || !arr.length) return '';
+    return `<ul class="rp-bullets">${arr.slice(0, 3).map(b => `<li>${esc(b)}</li>`).join('')}</ul>`;
+  }
+
+  // ── Contact row ───────────────────────────────────────────────────────────
+  const contactParts = [
+    contact.phone ? esc(contact.phone) : null,
+    contact.email ? esc(contact.email) : null,
+    ...(contact.links || []).map(l => l.url
+      ? `<a href="${esc(l.url)}" target="_blank">${esc(l.label || l.url)}</a>`
+      : null),
+  ].filter(Boolean);
+
+  // ── Skills: filter profile buckets by selection list ─────────────────────
+  const selectedSkillSet    = new Set(selection.skills || []);
+  const allProfileSkillsSet = new Set((profile.skill_buckets || []).flatMap(b => b.skills));
+  const filteredBuckets = (profile.skill_buckets || [])
+    .map(b => ({ cat: b.category, skills: b.skills.filter(s => selectedSkillSet.has(s)) }))
+    .filter(b => b.skills.length);
+  // Extra skills selected that aren't in any profile bucket (accepted inferred skills)
+  const extraSkills = (selection.skills || []).filter(s => !allProfileSkillsSet.has(s));
+  if (extraSkills.length) filteredBuckets.push({ cat: 'Additional', skills: extraSkills });
+
+  const skillsBody = filteredBuckets.length
+    ? `<ul class="rp-skill-list">${
+        filteredBuckets.map(g =>
+          `<li><strong>${esc(g.cat)}:</strong> ${esc(g.skills.join(', '))}</li>`
+        ).join('')
+      }</ul>`
+    : '';
+
+  // ── Experience: facts from profile, bullets from selection ────────────────
+  const expBody = (selection.experience || []).slice(0, 3).map(sel => {
+    const pe    = (profile.experience || []).find(e => e.id === sel.id) || {};
+    const dates = [pe.start, pe.end].filter(Boolean).join(' – ');
+    const blts  = (sel.bullets && sel.bullets.length ? sel.bullets : pe.highlights || []).slice(0, 3);
+    return `<div class="rp-entry">
+      <div class="rp-entry-head">
+        <span class="rp-exp-label"><strong>${esc(pe.company)}</strong> — ${esc(pe.title)}</span>
+        <span class="rp-entry-dates">${esc(dates)}</span>
+      </div>
+      ${bullets(blts)}
+    </div>`;
+  }).join('');
+
+  // ── Projects: <ol>, facts from profile, bullets from selection ────────────
+  const projItems = (selection.projects || []).slice(0, 3).map(sel => {
+    const pp   = (profile.projects || []).find(pr => pr.id === sel.id) || {};
+    const tech = (pp.tech || []).join(', ');
+    const blts = (sel.bullets && sel.bullets.length ? sel.bullets : pp.highlights || []).slice(0, 3);
+    const nameEl = pp.url
+      ? `<a class="rp-proj-name" href="${esc(pp.url)}" target="_blank">${esc(pp.name)}</a>`
+      : `<span class="rp-proj-name-plain">${esc(pp.name)}</span>`;
+    return `<li class="rp-proj-item">${nameEl}${tech
+      ? `<span class="rp-proj-stack"><em>Stack: ${esc(tech)}</em></span>`
+      : ''}${bullets(blts)}</li>`;
+  }).join('');
+  const projBody = projItems ? `<ol class="rp-proj-list">${projItems}</ol>` : '';
+
+  // ── Education: always from profile ───────────────────────────────────────
+  const eduBody = (profile.education || []).map(ed =>
+    `<div class="rp-entry">
+      <div class="rp-entry-head">
+        <span class="rp-exp-label">${esc(ed.institution)}</span>
+        <span class="rp-entry-dates">${esc(ed.year)}</span>
+      </div>
+      <div class="rp-edu-degree">${esc(ed.degree)}</div>
+    </div>`
+  ).join('');
+
+  // ── Publications: <ol>, always from profile ───────────────────────────────
+  const pubItems = (profile.publications || []).map(pub => {
+    const titleEl = pub.title
+      ? (pub.url
+          ? `<a class="rp-pub-title" href="${esc(pub.url)}" target="_blank">${esc(pub.title)}</a>`
+          : `<span class="rp-pub-title-plain">${esc(pub.title)}</span>`)
+      : '';
+    const venueEl = (pub.venue || pub.year)
+      ? `<span class="rp-pub-venue">${[pub.venue, pub.year].filter(Boolean).map(esc).join(' ')}</span>`
+      : '';
+    return `<li class="rp-pub-item">${titleEl}${venueEl}</li>`;
+  }).join('');
+  const pubBody = pubItems ? `<ol class="rp-pub-list">${pubItems}</ol>` : '';
+
+  // ── Assemble ──────────────────────────────────────────────────────────────
+  const summary = selection.summary || id.summary || '';
+
+  return `
+    <div class="rp-header">
+      <div class="rp-name">${esc(id.name || 'Your Name')}</div>
+      ${contactParts.length ? `<div class="rp-contact">${contactParts.join(' | ')}</div>` : ''}
+    </div>
+    ${section('Profile',         summary  ? `<p class="rp-prose">${esc(summary)}</p>` : '')}
+    ${section('Work Experience', expBody)}
+    ${section('Projects',        projBody)}
+    ${section('Skills',          skillsBody)}
+    ${section('Education',       eduBody)}
+    ${section('Publications',    pubBody)}
+  `;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCALE TO FIT VIEWPORT
+   Shrinks the page with CSS transform when the viewport is narrower than
+   816px + padding. Never upscales. Recalculates on resize.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function fitPage() {
+  const wrap = document.getElementById('rp-scale-wrap');
+  const page = document.getElementById('rp-page');
+  if (!wrap || !page) return;
+
+  // Reset first so we can measure natural size
+  page.style.transform       = '';
+  page.style.transformOrigin = '';
+  wrap.style.height          = '';
+  wrap.style.width           = '';
+
+  const availW = window.innerWidth - 48;   // 24px body padding each side
+  const pageW  = 816;
+  const scale  = Math.min(1, availW / pageW);
+
+  if (scale < 1) {
+    const pageH = page.offsetHeight;
+    page.style.transform       = `scale(${scale})`;
+    page.style.transformOrigin = 'top center';
+    wrap.style.height          = Math.ceil(pageH * scale) + 'px';
+    wrap.style.width           = Math.ceil(pageW * scale) + 'px';
+  }
+}
+
+
+/* ── Boot ──────────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('rp-page').innerHTML = renderResume(PROFILE, SELECTION);
+  fitPage();
+});
+window.addEventListener('resize', fitPage);
+</script>
+</body>
+</html>

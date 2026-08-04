@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+.env
+.DS_Store
+
+# App-local OpenCode home (credentials + session data)
+.opencode-home/
+
+# Uploaded documents and generated profile are user data, not source
+workspace/documents/*
+!workspace/documents/.gitkeep
+workspace/profile/*
+!workspace/profile/.gitkeep
+workspace/browser-profile/*
+!workspace/browser-profile/.gitkeep
+workspace/jobs/*
+!workspace/jobs/.gitkeep

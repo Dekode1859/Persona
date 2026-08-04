@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Candidate Profile (v2)",
+  "description": "Master profile — all experience, skills, and projects stored without resume-length constraints. skill_buckets enable partial cross-platform matching. raw_description on experience/projects feeds the future composition engine.",
+  "type": "object",
+  "required": ["identity", "contact", "skill_buckets", "experience", "projects", "education", "certifications", "publications"],
+  "properties": {
+    "identity": {
+      "type": "object",
+      "properties": {
+        "name":     { "type": "string" },
+        "headline": { "type": "string" },
+        "summary":  { "type": "string", "description": "2-4 sentence professional summary" },
+        "location": { "type": "string" }
+      }
+    },
+    "contact": {
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "url"],
+            "properties": {
+              "label": { "type": "string", "description": "e.g. LinkedIn, GitHub, Portfolio" },
+              "url":   { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "skill_buckets": {
+      "type": "array",
+      "description": "Skills grouped by domain. Same-bucket membership signals partial match even if the exact skill differs (AWS vs Azure both in Cloud Platforms).",
+      "items": {
+        "type": "object",
+        "required": ["category", "skills"],
+        "properties": {
+          "category": { "type": "string" },
+          "skills":   { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "experience": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id":              { "type": "string" },
+          "title":          { "type": "string" },
+          "company":        { "type": "string" },
+          "start":          { "type": "string" },
+          "end":            { "type": "string" },
+          "raw_description": { "type": "string", "description": "Full technical explanation: architecture, tools, scale, design decisions. Source material for the composition engine." },
+          "highlights":     { "type": "array", "items": { "type": "string" }, "description": "ATS bullets: Action verb + metric/impact" },
+          "tags":           { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id":              { "type": "string" },
+          "name":           { "type": "string" },
+          "description":    { "type": "string", "description": "One-line display summary" },
+          "raw_description": { "type": "string", "description": "Full technical explanation: architecture, design decisions, interesting problems solved, scale. The composition engine drafts role-targeted bullets from this." },
+          "tech":           { "type": "array", "items": { "type": "string" } },
+          "url":            { "type": "string" },
+          "highlights":     { "type": "array", "items": { "type": "string" }, "description": "ATS impact bullets" },
+          "tags":           { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "education": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "degree":      { "type": "string" },
+          "institution": { "type": "string" },
+          "year":        { "type": "string" }
+        }
+      }
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name":   { "type": "string" },
+          "issuer": { "type": "string" },
+          "year":   { "type": "string" }
+        }
+      }
+    },
+    "publications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title":  { "type": "string" },
+          "venue":  { "type": "string" },
+          "year":   { "type": "string" },
+          "url":    { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+[project]
+name = "persona"
+version = "0.1.0"
+description = "Persona - an AgentOS application for profile, job tracking, and tailored applications"
+requires-python = ">=3.11"
+dependencies = [
+    # The runtime. `browser` pulls Playwright, which Core's browser-agent and
+    # this app's scanner both run as subprocesses. pywebview + requests arrive
+    # transitively — they are Core's deps, not this app's.
+    "agentos[browser]",
+]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+# Development-time path dep on the AgentOS monorepo checked out alongside this
+# one. Switch to { git = "...", tag = "v0.x" } once AgentOS has a remote — that
+# is the only line that needs to change.
+agentos = { path = "../AgentOS", editable = true }
