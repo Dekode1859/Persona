@@ -7,7 +7,7 @@ dependencies = [
     # The runtime. `browser` pulls Playwright, which Core's browser-agent and
     # this app's scanner both run as subprocesses. pywebview + requests arrive
     # transitively — they are Core's deps, not this app's.
-    "agentos[browser]",
+    "agentos-desktop[browser]",
 ]
 
 [dependency-groups]
@@ -19,7 +19,4 @@ dev = [
 package = false
 
 [tool.uv.sources]
-# Development-time path dep on the AgentOS monorepo checked out alongside this
-# one. Switch to { git = "...", tag = "v0.x" } once AgentOS has a remote — that
-# is the only line that needs to change.
-agentos = { path = "../AgentOS", editable = true }
+agentos-desktop = { git = "https://github.com/Dekode1859/AgentOS.git", branch = "main" }

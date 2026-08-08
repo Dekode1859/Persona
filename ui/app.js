@@ -4412,11 +4412,14 @@ function _handleBrowserDied() {
   // Fires when the sign-in browser window is closed (Settings > Job Site Sign-in).
   _stopBrowserPoll();
   if (!state.browser.port) return; // already cleaned up
+  const wasSignInSession = state.browser.jobId === '__setup__';
   state.browser.port  = null;
   state.browser.jobId = null;
   bridge.browserClose().catch(() => {});
   loadBrowserProfileStatus().then(renderBrowserProfileSettings);
-  showToast('Signed in - job links from that site can now be read.');
+  if (wasSignInSession && !state.browserProfileExists) {
+    showToast('Browser window closed. Verify sign-in before closing it.');
+  }
 }
 
 // Called by the bridge watcher thread via evaluate_js the instant the
@@ -4528,7 +4531,7 @@ function renderBrowserProfileSettings() {
     el.innerHTML = `
       <p class="settings-hint" style="margin-top:0">Sign in in the browser window that just opened, then confirm here.</p>
       <div class="settings-row" style="align-items:center;gap:8px">
-        <sl-button id="btn-confirm-signin" size="small" variant="primary">I've signed in</sl-button>
+        <sl-button id="btn-confirm-signin" size="small" variant="primary">Verify Google sign-in</sl-button>
         <sl-button id="btn-cancel-signin" size="small">Cancel</sl-button>
       </div>`;
     return;
@@ -5890,8 +5893,6 @@ function wire() {
 
     if (e.target.closest('#btn-reanalyze-analysis')) { reAnalyzeJob(); return; }
     if (e.target.closest('#btn-reset-ignored-skills')) { resetIgnoredAnalysisSkills(); return; }
-    if (e.target.closest('#btn-confirm-signin'))        { confirmGoogleLogin(); return; }
-    if (e.target.closest('#btn-cancel-signin'))         { cancelBrowserSignin(); return; }
     const skillToggle = e.target.closest('[data-analysis-skill]');
     if (skillToggle?.dataset.analysisSkill) { toggleIgnoredAnalysisSkill(skillToggle.dataset.analysisSkill); return; }
     const openJobBtn = e.target.closest('#btn-open-job-browser');
@@ -5955,8 +5956,15 @@ function wire() {
   // Settings dialog - browser profile section (delegated: content is dynamically rendered)
   document.getElementById('settings-dialog').addEventListener('click', e => {
     if (e.target.closest('#btn-setup-browser-profile')) {
-      document.getElementById('settings-dialog').hide();
       setupBrowserProfile();
+      return;
+    }
+    if (e.target.closest('#btn-confirm-signin')) {
+      confirmGoogleLogin();
+      return;
+    }
+    if (e.target.closest('#btn-cancel-signin')) {
+      cancelBrowserSignin();
       return;
     }
     if (e.target.closest('#btn-reset-browser-profile')) {

@@ -25,12 +25,36 @@ and URL construction don't belong in a domain-ignorant Core.
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import re
+import shutil
 import sys
 
 RECOMMENDED_URL = "https://www.linkedin.com/jobs/collections/recommended/"
 SEARCH_URL = "https://www.linkedin.com/jobs/search/"
+
+
+def _system_chrome_available() -> bool:
+    """Return whether the machine has a Chrome installation Playwright can use."""
+    names = ("google-chrome", "google-chrome-stable", "chrome")
+    if sys.platform == "win32":
+        local = os.environ.get("LOCALAPPDATA", "")
+        program_files = os.environ.get("PROGRAMFILES", "")
+        program_files_x86 = os.environ.get("PROGRAMFILES(X86)", "")
+        candidates = (
+            os.path.join(local, "Google", "Chrome", "Application", "chrome.exe"),
+            os.path.join(program_files, "Google", "Chrome", "Application", "chrome.exe"),
+            os.path.join(program_files_x86, "Google", "Chrome", "Application", "chrome.exe"),
+        )
+        return any(os.path.isfile(path) for path in candidates) or bool(shutil.which("chrome.exe"))
+    if sys.platform == "darwin":
+        candidates = (
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            os.path.expanduser("~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+        )
+        return any(os.path.isfile(path) for path in candidates)
+    return any(shutil.which(name) for name in names)
 
 # LinkedIn's own enumerated facet values (its search page's f_WT/f_JT query
 # params) — reused as-is rather than inventing our own free-text equivalents,
@@ -232,11 +256,12 @@ def run(profile_dir: str, settings: dict) -> dict:
     pathlib.Path(profile_dir).mkdir(parents=True, exist_ok=True)
 
     jobs: list[dict] = []
+    browser_channel = "chrome" if _system_chrome_available() else None
     with sync_playwright() as pw:
         ctx = pw.chromium.launch_persistent_context(
             profile_dir,
             headless=True,
-            channel="chrome",
+            channel=browser_channel,
             args=["--disable-blink-features=AutomationControlled"],
         )
         try:
