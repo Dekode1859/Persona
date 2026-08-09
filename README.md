@@ -50,6 +50,8 @@ The release build uses PyInstaller. It ships Spiritus, the pinned OpenCode
 engine, the Chromium browser used by scanner/PDF workflows, Persona's UI and
 configuration in one Windows installer or macOS DMG. Installed app data and
 credentials remain in the platform's normal per-user application-data folder.
+Public releases use the clean `v<version>` tag and `Persona <version>` title;
+CI build numbers are not exposed in the release name.
 
 Spiritus carries no knowledge of jobs, resumes, or profiles. Everything domain-
 specific lives here, which keeps the runtime reusable.

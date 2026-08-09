@@ -105,11 +105,26 @@ jobs:
         shell: bash
         run: |
           VERSION="$(sed -n 's/^version = "\([^"]*\)"$/\1/p' pyproject.toml | head -n 1)"
-          TAG="v${VERSION}-build.${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" \
-            release/Persona-Setup-*.exe \
-            release/Persona-*-macos.dmg \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "Persona ${VERSION} (build ${GITHUB_RUN_NUMBER})" \
-            --generate-notes
+          TAG="v${VERSION}"
+          NOTES="Persona ${VERSION} desktop release. Includes the Windows installer and macOS DMG."
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" \
+              release/Persona-Setup-*.exe \
+              release/Persona-*-macos.dmg \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+            gh release edit "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Persona ${VERSION}" \
+              --notes "$NOTES" \
+              --latest=false
+          else
+            gh release create "$TAG" \
+              release/Persona-Setup-*.exe \
+              release/Persona-*-macos.dmg \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Persona ${VERSION}" \
+              --notes "$NOTES" \
+              --latest=false
+          fi

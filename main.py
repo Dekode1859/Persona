@@ -59,6 +59,44 @@ def _prepare_bundled_runtime() -> None:
         shutil.copy2(shipped_config, installed_config)
 
 
+def _suppress_windows_subprocess_consoles() -> None:
+    """Prevent console-subsystem children from flashing windows in the app.
+
+    The installed executable is a windowed PyInstaller build, but OpenCode is
+    a native Windows console executable. Without these process flags Windows
+    creates a visible console for the engine and other child tools before the
+    Persona window is ready. Keep this scoped to frozen Windows builds so source
+    development retains normal subprocess behavior.
+    """
+    if not is_bundled() or sys.platform != "win32":
+        return
+
+    import subprocess
+
+    if getattr(subprocess, "_persona_hidden_console", False):
+        return
+
+    base_popen = subprocess.Popen
+    no_window = subprocess.CREATE_NO_WINDOW
+    new_console = subprocess.CREATE_NEW_CONSOLE
+    detached = subprocess.DETACHED_PROCESS
+
+    class HiddenConsolePopen(base_popen):
+        def __init__(self, *args, **kwargs):
+            flags = kwargs.get("creationflags") or 0
+            if not flags & (new_console | detached):
+                kwargs["creationflags"] = flags | no_window
+                if kwargs.get("startupinfo") is None:
+                    startupinfo = subprocess.STARTUPINFO()
+                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                    startupinfo.wShowWindow = subprocess.SW_HIDE
+                    kwargs["startupinfo"] = startupinfo
+            super().__init__(*args, **kwargs)
+
+    subprocess.Popen = HiddenConsolePopen
+    subprocess._persona_hidden_console = True
+
+
 def _verify_bundle() -> None:
     """Smoke-test resources used by CI without opening a native window."""
     if not is_bundled():
@@ -81,6 +119,7 @@ def _verify_bundle() -> None:
     print(f"Persona bundle OK (OpenCode {version})")
 
 
+_suppress_windows_subprocess_consoles()
 _prepare_bundled_runtime()
 
 
