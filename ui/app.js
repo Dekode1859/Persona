@@ -986,6 +986,10 @@ const bridge = (() => {
     browserSetupProfile:      ()    => call('browser_setup_profile'),
     browserCheckGoogleLogin:  ()    => call('browser_check_google_login'),
     browserResetProfile:      ()    => call('browser_reset_profile'),
+    createSession:            (title = '') => call('create_session', title),
+    sendMessage:              (sessionId, agent, model, text) =>
+      call('send_message', sessionId, agent || '', model || null, text),
+    sessionHistory:           (sessionId) => call('session_history', sessionId),
     scannerRun:           ()          => call('scanner_run'),
     scannerGetFeed:       ()          => call('scanner_get_feed'),
     scannerGetSettings:   ()          => call('scanner_get_settings'),
@@ -995,20 +999,62 @@ const bridge = (() => {
   };
 })();
 
-// ── OpenCode HTTP ──────────────────────────────────────────────────────────────
-async function oc(path, options = {}) {
-  const r = await fetch(`http://127.0.0.1:${state.port}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
+// ── Spiritus agent runner ─────────────────────────────────────────────────────
+async function runAgentPrompt(agentId, promptText) {
+  const session = await bridge.createSession();
+  const parts = new Map();
+  let eventSource;
+  let settled = false;
+
+  const close = () => {
+    if (eventSource) eventSource.close();
+    eventSource = null;
+  };
+
+  const result = new Promise((resolve, reject) => {
+    const finish = (error, value) => {
+      if (settled) return;
+      settled = true;
+      close();
+      if (error) reject(error);
+      else resolve(value);
+    };
+
+    eventSource = new EventSource(`/api/events?session_id=${encodeURIComponent(session.id)}`);
+    eventSource.onmessage = (message) => {
+      let event;
+      try { event = JSON.parse(message.data); } catch (_) { return; }
+      if (event.session_id !== session.id) return;
+      if (event.type === 'text.delta') {
+        parts.set(event.part_id, (parts.get(event.part_id) || '') + (event.text || ''));
+      } else if (event.type === 'text.snapshot') {
+        parts.set(event.part_id, event.text || '');
+      } else if (event.type === 'run.failed') {
+        finish(new Error(event.message || `Agent ${agentId} failed`));
+      } else if (event.type === 'run.idle') {
+        finish(null, [...parts.values()].join(''));
+      }
+    };
+    eventSource.onerror = () => finish(new Error('Spiritus event stream failed'));
   });
-  if (!r.ok) {
-    let detail = '';
-    try { detail = (await r.text()).slice(0, 300); } catch (_) {}
-    throw new Error(`HTTP ${r.status}${detail ? ': ' + detail : ''}`);
+
+  try {
+    await new Promise((resolve, reject) => {
+      const started = Date.now();
+      const check = () => {
+        if (eventSource?.readyState === EventSource.OPEN) resolve();
+        else if (eventSource?.readyState === EventSource.CLOSED) reject(new Error('Spiritus event stream closed'));
+        else if (Date.now() - started > 10000) reject(new Error('Spiritus event stream timed out'));
+        else setTimeout(check, 25);
+      };
+      check();
+    });
+    await bridge.sendMessage(session.id, agentId, null, promptText);
+  } catch (error) {
+    close();
+    throw error;
   }
-  if (r.status === 204) return null;
-  const t = await r.text();
-  return t ? JSON.parse(t) : null;
+  return result;
 }
 
 // ── Documents ──────────────────────────────────────────────────────────────────
@@ -1156,12 +1202,7 @@ async function extractAndMerge() {
   if (!text) { showToast('Add a document or paste text first.'); return; }
   setGenerating(true);
   try {
-    const session = await oc('/session', { method: 'POST', body: '{}' });
-    const msg = await oc(`/session/${session.id}/message`, {
-      method: 'POST',
-      body: JSON.stringify({ agent: 'profile', parts: [{ type: 'text', text: 'Documents:\n\n' + text }] }),
-    });
-    const reply = (msg?.parts || []).filter(p => p.type === 'text' && p.text).map(p => p.text).join('');
+    const reply = await runAgentPrompt('profile', 'Documents:\n\n' + text);
     let extracted;
     try { extracted = parseAgentJson(reply); }
     catch (_) { showToast('Could not parse extraction - try again.'); return; }
@@ -4231,13 +4272,10 @@ async function openAnalysisSnapshot(runId) {
 // Agents write JSON to a temp file in workspace/jobs/ rather than outputting
 // raw text - eliminates fragile text parsing and lets OpenCode validate the file.
 async function runAgentToFile(agentId, promptText) {
-  const session  = await oc('/session', { method: 'POST', body: '{}' });
-  const outRel   = `jobs/.tmp-${agentId}-${session.id}.json`;
+  const runId   = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const outRel  = `jobs/.tmp-${agentId}-${runId}.json`;
   const fullText = `${promptText}\n\nOUTPUT_FILE: workspace/${outRel}`;
-  await oc(`/session/${session.id}/message`, {
-    method: 'POST',
-    body: JSON.stringify({ agent: agentId, parts: [{ type: 'text', text: fullText }] }),
-  });
+  await runAgentPrompt(agentId, fullText);
   const file = await bridge.workspaceRead(outRel);
   bridge.workspaceDelete(outRel).catch(() => {});   // fire-and-forget cleanup
   if (file.error || !file.content) throw new Error(file.error || `Agent ${agentId} did not write output file`);

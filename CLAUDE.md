@@ -5,23 +5,23 @@ Guidance for Claude Code (claude.ai/code) working in this repository.
 ## What Persona is
 
 A desktop app for building a structured profile of your work, tracking jobs
-against it, and tailoring applications. It is an **AgentOS application**: this
+against it, and tailoring applications. It is a **Spiritus application**: this
 repo holds configuration and domain assets only. The runtime — window, agent
-execution, storage, providers, JS↔Python bridge — comes from the `agentos`
+execution, storage, providers, JS↔Python bridge — comes from the `spiritus`
 package.
 
 ## Running
 
 ```bash
-make install    # uv sync
-make run        # uv run python run.py  (bootstraps Playwright on first run)
+uv sync
+uv run python run.py  # bootstraps Playwright on first run
 ```
 
 Requires Python 3.11+. The OpenCode engine is fetched automatically —
-`run.py` calls `agentos.engine.ensure()`, which downloads the pinned build
-(~60 MB) into a per-user cache the first time only. `agentos` never downloads
+`run.py` calls `spiritus.engine.ensure()`, which downloads the pinned build
+(~60 MB) into a per-user cache the first time only. `spiritus` never downloads
 implicitly on its own; this app opts in from its bootstrap. To use an engine you
-already have, set `AGENTOS_OPENCODE_BIN` or put `opencode` on PATH — both take
+already have, set `SPIRITUS_OPENCODE_BIN` or put `opencode` on PATH — both take
 precedence over the cache.
 
 ## The Core boundary
@@ -33,32 +33,31 @@ Core is a dependency, not vendored source:
 
 ```toml
 [tool.uv.sources]
-agentos = { path = "../AgentOS", editable = true }
+spiritus = { path = "../spiritus", editable = true }
 ```
 
-It's an editable path dep on the sibling AgentOS checkout during development;
+It's an editable path dep on the sibling Spiritus checkout during development;
 for a standalone checkout use
-`agentos @ git+https://github.com/Dekode1859/AgentOS@v0.2.0` instead.
+`spiritus @ git+https://github.com/Dekode1859/Spiritus@v0.0.1` instead.
 
-Because the path dep is editable, **edits to `../AgentOS` take effect here
+Because the path dep is editable, **edits to `../spiritus` take effect here
 immediately** — convenient, and also a way for a Core change to break this app
 without any commit in this repo.
 
 **Never add domain knowledge to Core.** No jobs, resumes, profiles, or LinkedIn
-anything in `agentos`. The test: would this make sense in a cooking-recipe app?
+anything in `spiritus`. The test: would this make sense in a cooking-recipe app?
 If not, it belongs here. To extend the JS↔Python surface, subclass `Bridge` in
 `app_bridge.py` and pass it via `AppConfig.bridge_cls` — that's what
 `PersonaBridge` exists for.
 
-`apps/jobsearch-os` in the AgentOS repo is this app's frozen ancestor, kept only
-as proof that Core runs more than one app. Do not port changes back to it.
+The earlier application prototype is not part of this repository's runtime.
 
 ## Scanner roadmap
 
 The Scanner tab (`scanner/`, `app_bridge.py`) headlessly pulls jobs from the
 user's logged-in LinkedIn session via the shared `workspace/browser-profile`
 Chromium profile. LinkedIn selectors and URL construction live in
-`scanner/linkedin_scan.py`, never in `agentos`. Scanned jobs land in
+`scanner/linkedin_scan.py`, never in `spiritus`. Scanned jobs land in
 `workspace/jobs/scanner-feed.json`, separate from tracked jobs in `jobs.json`,
 until explicitly promoted.
 

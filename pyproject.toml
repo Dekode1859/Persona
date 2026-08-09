@@ -1,13 +1,12 @@
 [project]
 name = "persona"
 version = "0.1.0"
-description = "Persona - an AgentOS application for profile, job tracking, and tailored applications"
+description = "Persona - a Spiritus application for profile, job tracking, and tailored applications"
 requires-python = ">=3.11"
 dependencies = [
-    # The runtime. `browser` pulls Playwright, which Core's browser-agent and
-    # this app's scanner both run as subprocesses. pywebview + requests arrive
-    # transitively — they are Core's deps, not this app's.
-    "agentos-desktop[browser]",
+    # Spiritus supplies the runtime; Persona owns Playwright browser workflows.
+    "spiritus",
+    "playwright>=1.40.0",
 ]
 
 [dependency-groups]
@@ -19,4 +18,4 @@ dev = [
 package = false
 
 [tool.uv.sources]
-agentos-desktop = { git = "https://github.com/Dekode1859/AgentOS.git", branch = "main" }
+spiritus = { path = "../spiritus", editable = true }

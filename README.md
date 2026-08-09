@@ -3,20 +3,20 @@
 A desktop app for building a structured profile of your work, tracking jobs
 against it, and tailoring applications to each one.
 
-Persona is an [AgentOS](../AgentOS) application: it supplies configuration and
-domain assets, and the `agentos` package supplies the runtime — window, agent
+Persona is a [Spiritus](../spiritus) application: it supplies configuration and
+domain assets, and the `spiritus` package supplies the runtime — window, agent
 execution, storage, providers, and the JS↔Python bridge. It ships its own UI
 via `AppConfig.ui_dir` rather than using the shared chat UI.
 
 ## Run
 
 ```bash
-make install
-make run
+uv sync
+uv run python run.py
 ```
 
 Requires the `opencode` CLI on PATH (`curl -fsSL https://opencode.ai/install | bash`).
-`make run` also installs Playwright's Chromium on first launch. No API key is
+The bootstrap also installs Playwright's Chromium on first launch. No API key is
 needed to start — the app defaults to a free OpenCode Zen model.
 
 ### Connecting a provider
@@ -24,7 +24,7 @@ needed to start — the app defaults to a free OpenCode Zen model.
 Click **Settings** in the sidebar to paste an API key (Anthropic, OpenAI, …) or
 pick a model. Credentials are stored in the app-local `.opencode-home/`, not in
 `~/.opencode`, so this app is isolated from anything else using OpenCode on the
-same machine. `make auth-setup` does the same thing from the CLI.
+same machine. Provider setup is available from the Settings panel.
 
 ## Layout
 
@@ -38,24 +38,23 @@ same machine. `make auth-setup` does the same thing from the CLI.
 | `schemas/` | JSON schemas for the profile and job records. |
 | `workspace/` | User data — documents, profile, jobs, browser profile. Gitignored. |
 
-## How it consumes Core
+## How it consumes Spiritus
 
-`pyproject.toml` depends on `agentos[browser]`, resolved during development to
-the sibling AgentOS checkout:
+`pyproject.toml` depends on Spiritus and Playwright. During development Spiritus
+is resolved to the sibling checkout:
 
 ```toml
 [tool.uv.sources]
-agentos = { path = "../AgentOS", editable = true }
+spiritus = { path = "../spiritus", editable = true }
 ```
 
-Switch that to
-`agentos = { git = "https://github.com/Dekode1859/AgentOS", tag = "v0.2.0" }`
-for a standalone checkout; nothing else in this repo changes. `main.py` imports `agentos` like any other
+For a standalone checkout, replace the source with a Spiritus Git reference;
+nothing else in this repo changes. `main.py` imports `spiritus` like any other
 installed package — there is no `sys.path` manipulation and no vendored copy of
-Core.
+Spiritus runtime.
 
-Core carries no knowledge of jobs, resumes, or profiles. Everything domain-
-specific lives here, which is what makes the runtime swappable.
+Spiritus carries no knowledge of jobs, resumes, or profiles. Everything domain-
+specific lives here, which keeps the runtime reusable.
 
 ## Scanner
 

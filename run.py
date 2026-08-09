@@ -17,11 +17,11 @@ def run(*args, check=True, **kwargs):
 def ensure_engine() -> None:
     """Make sure an OpenCode engine exists before the app needs it.
 
-    agentos never downloads implicitly — that is the app's call to make, in a
+    Spiritus never downloads implicitly — that is the app's call to make, in a
     bootstrap where a one-time ~60 MB fetch is expected and visible. Without
     this the app still starts, but chat and every agent are dead.
     """
-    from agentos import engine
+    from spiritus import engine
 
     found = engine.resolve()
     if found is not None:

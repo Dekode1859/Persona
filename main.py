@@ -1,18 +1,17 @@
 """
-Persona - an AgentOS application.
+Persona - a Spiritus application.
 
 A Profile ("About Me") workspace. Upload / paste candidate documents, extract a
 structured profile via the `profile` agent, render and edit it, then track and
 tailor applications against it.
 
-Like every AgentOS app, this is only configuration + domain assets. Execution
-(window, OpenCode runtime, storage, providers) comes from AgentOS Core, which
-this repo consumes as the installed `agentos` package rather than as shared
-source. This app ships its own UI (an About Me dashboard) via AppConfig.ui_dir.
+The reusable runtime, storage, providers, and bridge come from Spiritus. This
+app supplies its configuration, domain assets, and custom bridge methods, plus
+its own UI (an About Me dashboard) via AppConfig.ui_dir.
 """
 from pathlib import Path
 
-from agentos import run, AppConfig, WorkspaceFolder
+from spiritus import run, AppConfig, WorkspaceFolder
 
 from app_bridge import PersonaBridge
 

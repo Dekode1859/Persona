@@ -10,6 +10,9 @@ dist/
 # App-local OpenCode home (credentials + session data)
 .opencode-home/
 
+# Spiritus runtime state (sessions, audit data, and generated worktree)
+.spiritus/
+
 # Uploaded documents and generated profile are user data, not source
 workspace/documents/*
 !workspace/documents/.gitkeep

@@ -1,8 +1,8 @@
 """Persona's Bridge extension — Scanner methods only.
 
 Uses AppConfig.bridge_cls so Scanner's LinkedIn specifics never have to live in
-the agentos package: Core stays grep-clean of domain words, and this app can
-extend the JS↔Python surface without forking it.
+Spiritus remains domain-agnostic while this app owns its scanner methods and
+extends the JS↔Python surface without forking the runtime.
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from agentos.bridge import Bridge
+from spiritus.bridge import Bridge
 
 from scanner import store
 
