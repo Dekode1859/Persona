@@ -327,7 +327,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "playwright", specifier = ">=1.40.0" },
-    { name = "spiritus", editable = "../spiritus" },
+    { name = "spiritus", git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.2" },
 ]
 
 [package.metadata.requires-dev]
@@ -746,25 +746,12 @@ wheels = [
 
 [[package]]
 name = "spiritus"
-version = "0.0.1"
-source = { editable = "../spiritus" }
+version = "0.0.2"
+source = { git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.2#35d93a106abc8a0d249e06d737ad7077c22c87df" }
 dependencies = [
     { name = "jsonschema" },
     { name = "pywebview" },
     { name = "requests" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "jsonschema", specifier = ">=4.23.0" },
-    { name = "pywebview", specifier = ">=4.4.0" },
-    { name = "requests", specifier = ">=2.31.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "ruff", specifier = ">=0.6" },
 ]
 
 [[package]]

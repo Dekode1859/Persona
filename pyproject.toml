@@ -5,7 +5,7 @@ description = "Persona - a Spiritus application for profile, job tracking, and t
 requires-python = ">=3.11"
 dependencies = [
     # Spiritus supplies the runtime; Persona owns Playwright browser workflows.
-    "spiritus",
+    "spiritus @ git+https://github.com/Dekode1859/Spiritus.git@v0.0.2",
     "playwright>=1.40.0",
 ]
 
@@ -16,6 +16,3 @@ dev = [
 
 [tool.uv]
 package = false
-
-[tool.uv.sources]
-spiritus = { path = "../spiritus", editable = true }

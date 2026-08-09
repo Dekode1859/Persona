@@ -3,7 +3,10 @@ __pycache__/
 *.pyc
 build/
 dist/
+release/
+packaging/build-assets/
 *.spec
+!packaging/persona.spec
 .env
 .DS_Store
 

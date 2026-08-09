@@ -15,9 +15,10 @@ uv sync
 uv run python run.py
 ```
 
-Requires the `opencode` CLI on PATH (`curl -fsSL https://opencode.ai/install | bash`).
-The bootstrap also installs Playwright's Chromium on first launch. No API key is
-needed to start — the app defaults to a free OpenCode Zen model.
+For a source checkout, the bootstrap installs the pinned OpenCode engine and
+Playwright's Chromium on first launch. The packaged Windows and macOS releases
+already include both, so they do not require a separate OpenCode installation.
+No API key is needed to start — the app defaults to a free OpenCode Zen model.
 
 ### Connecting a provider
 
@@ -40,18 +41,15 @@ same machine. Provider setup is available from the Settings panel.
 
 ## How it consumes Spiritus
 
-`pyproject.toml` depends on Spiritus and Playwright. During development Spiritus
-is resolved to the sibling checkout:
+`pyproject.toml` depends on Spiritus `v0.0.2` directly from its Git tag and on
+Playwright. `main.py` imports `spiritus` like any other installed package —
+there is no `sys.path` manipulation and no vendored copy of the Spiritus
+runtime.
 
-```toml
-[tool.uv.sources]
-spiritus = { path = "../spiritus", editable = true }
-```
-
-For a standalone checkout, replace the source with a Spiritus Git reference;
-nothing else in this repo changes. `main.py` imports `spiritus` like any other
-installed package — there is no `sys.path` manipulation and no vendored copy of
-Spiritus runtime.
+The release build uses PyInstaller. It ships Spiritus, the pinned OpenCode
+engine, the Chromium browser used by scanner/PDF workflows, Persona's UI and
+configuration in one Windows installer or macOS DMG. Installed app data and
+credentials remain in the platform's normal per-user application-data folder.
 
 Spiritus carries no knowledge of jobs, resumes, or profiles. Everything domain-
 specific lives here, which keeps the runtime reusable.

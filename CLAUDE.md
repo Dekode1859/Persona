@@ -29,20 +29,10 @@ precedence over the cache.
 `main.py` is the entire contract: one `AppConfig`, one `run()` call. Core reads
 that object and nothing else app-specific.
 
-Core is a dependency, not vendored source:
-
-```toml
-[tool.uv.sources]
-spiritus = { path = "../spiritus", editable = true }
-```
-
-It's an editable path dep on the sibling Spiritus checkout during development;
-for a standalone checkout use
-`spiritus @ git+https://github.com/Dekode1859/Spiritus@v0.0.1` instead.
-
-Because the path dep is editable, **edits to `../spiritus` take effect here
-immediately** — convenient, and also a way for a Core change to break this app
-without any commit in this repo.
+Core is a dependency, not vendored source. Persona pins the released Spiritus
+tag `v0.0.2` through a direct Git dependency, so local development and CI use
+the same install contract. Edits to a sibling `../spiritus` checkout do not
+silently change Persona.
 
 **Never add domain knowledge to Core.** No jobs, resumes, profiles, or LinkedIn
 anything in `spiritus`. The test: would this make sense in a cooking-recipe app?
