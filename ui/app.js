@@ -1136,9 +1136,11 @@ async function loadProfile() {
     const res = await bridge.workspaceRead(PROFILE_PATH);
     if (res && res.content && !res.error) {
       state.profile = { ...emptyProfile(), ...JSON.parse(res.content) };
+      updateSidebarPersona();
       return true;
     }
   } catch (_) {}
+  updateSidebarPersona();
   return false;
 }
 
@@ -1209,6 +1211,7 @@ async function extractAndMerge() {
 
     state.profile = mergeProfile(state.profile || emptyProfile(), extracted);
     await bridge.workspaceWrite(PROFILE_PATH, JSON.stringify(state.profile, null, 2));
+    updateSidebarPersona();
     state.editingSection = null;
     renderProfileSections();
     showProfileSubview('main');
@@ -2120,6 +2123,25 @@ function renderProfileStrength(p) {
   </div>`;
 }
 
+function updateSidebarPersona() {
+  const profile = state.profile || {};
+  const identity = profile.identity || {};
+  const name = document.getElementById('sidebar-persona-name');
+  const headline = document.getElementById('sidebar-persona-headline');
+  const score = document.getElementById('sidebar-persona-score');
+  const fill = document.getElementById('sidebar-persona-fill');
+  if (!name || !headline || !score || !fill) return;
+
+  const checks = profileChecks(profile);
+  const total = checks.reduce((sum, check) => sum + check.weight, 0);
+  const complete = checks.reduce((sum, check) => sum + (check.ok ? check.weight : 0), 0);
+  const percentage = total ? Math.round((complete / total) * 100) : 0;
+  name.textContent = identity.name || 'No profile yet';
+  headline.textContent = identity.headline || 'Add your experience to get started';
+  score.textContent = `${percentage}%`;
+  fill.style.width = `${percentage}%`;
+}
+
 function renderSection(name) {
   const meta      = SECTION_META[name];
   const isEditing = state.editingSection === name;
@@ -2700,6 +2722,7 @@ async function saveSection(name) {
   state.editingSection = null;
   try {
     await bridge.workspaceWrite(PROFILE_PATH, JSON.stringify(state.profile, null, 2));
+    updateSidebarPersona();
     showToast('Saved.');
   } catch (_) { showToast('Save failed.'); }
   replaceSectionInDOM(name);

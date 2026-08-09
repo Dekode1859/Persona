@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Persona</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.19.1/cdn/themes/dark.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -59,15 +62,27 @@
         </button>
       </nav>
 
-      <div class="sidebar-meta-card">
-        <div class="sidebar-meta-title">Active model</div>
-        <div id="model-badge" title="Change model in Settings">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
-          <span id="model-badge-text">-</span>
+      <div class="sidebar-persona-card">
+        <div class="sidebar-label">Your persona</div>
+        <div class="sidebar-persona-body">
+          <div id="sidebar-persona-name" class="sidebar-persona-name">No profile yet</div>
+          <div id="sidebar-persona-headline" class="sidebar-persona-headline">Add your experience to get started</div>
+          <div class="sidebar-persona-progress-row">
+            <span>Completeness</span><span id="sidebar-persona-score">0%</span>
+          </div>
+          <div class="sidebar-persona-progress"><div id="sidebar-persona-fill"></div></div>
         </div>
       </div>
 
       <div id="sidebar-footer">
+        <div class="sidebar-local-status"><span class="sidebar-local-dot"></span>stored locally · no cloud</div>
+        <div class="sidebar-meta-card">
+          <div class="sidebar-meta-title">Active model</div>
+          <div id="model-badge" title="Change model in Settings">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
+            <span id="model-badge-text">-</span>
+          </div>
+        </div>
         <button class="nav-item utility-item" id="btn-settings">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           <span class="nav-label">Settings</span>
@@ -85,6 +100,7 @@
           <header class="view-header">
             <div class="view-header-row">
               <div>
+                <div class="view-eyebrow">Workspace / Profile</div>
                 <h1>Profile</h1>
                 <p class="view-sub">Your master profile - every role, skill, and project in one place.</p>
               </div>
@@ -158,6 +174,7 @@
           <header class="view-header">
             <div class="view-header-row">
               <div>
+                <div class="view-eyebrow">Workspace / Jobs</div>
                 <h1>Jobs</h1>
                 <p class="view-sub">Track and score the roles you're pursuing.</p>
               </div>
@@ -265,6 +282,7 @@
         <div class="scanner-shell">
           <div class="scanner-header">
             <div>
+              <div class="view-eyebrow">Workspace / Scanner</div>
               <h2>Scanner</h2>
               <p class="scanner-sub">Headlessly pulls jobs from your logged-in LinkedIn session. Review results here before adding them to Jobs.</p>
             </div>
