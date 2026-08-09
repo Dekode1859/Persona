@@ -32,7 +32,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --dev --frozen
+        run: uv sync --frozen
 
       - name: Install Inno Setup
         shell: powershell
@@ -67,7 +67,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --dev --frozen
+        run: uv sync --frozen
 
       - name: Build macOS app and DMG
         run: bash packaging/build-macos.sh

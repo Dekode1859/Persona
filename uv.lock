@@ -316,22 +316,14 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "playwright" },
-    { name = "spiritus" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pyinstaller" },
+    { name = "spiritus", extra = ["bundle"] },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "playwright", specifier = ">=1.40.0" },
-    { name = "spiritus", git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.2" },
+    { name = "spiritus", extras = ["bundle"], git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.31" },
 ]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pyinstaller", specifier = ">=6.0" }]
 
 [[package]]
 name = "playwright"
@@ -746,12 +738,17 @@ wheels = [
 
 [[package]]
 name = "spiritus"
-version = "0.0.2"
-source = { git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.2#35d93a106abc8a0d249e06d737ad7077c22c87df" }
+version = "0.0.31"
+source = { git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.31#2343a6c01d5c09619fc6de480462cf80509589d9" }
 dependencies = [
     { name = "jsonschema" },
     { name = "pywebview" },
     { name = "requests" },
+]
+
+[package.optional-dependencies]
+bundle = [
+    { name = "pyinstaller" },
 ]
 
 [[package]]

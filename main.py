@@ -12,13 +12,12 @@ its own UI (an About Me dashboard) via AppConfig.ui_dir.
 from __future__ import annotations
 
 import os
-import shutil
 import sys
 from pathlib import Path
 
 from spiritus import run, AppConfig, WorkspaceFolder
 from spiritus import engine
-from spiritus.runtime.paths import app_data_dir, is_bundled
+from spiritus.runtime.paths import is_bundled, project_root
 
 from app_bridge import PersonaBridge
 
@@ -28,73 +27,6 @@ def _bundle_root() -> Path:
     if is_bundled():
         return Path(getattr(sys, "_MEIPASS"))
     return Path(__file__).resolve().parent
-
-
-def _prepare_bundled_runtime() -> None:
-    """Point Spiritus at resources shipped inside an installed app.
-
-    Spiritus intentionally does not assume that every application bundles an
-    OpenCode engine. Persona does, so the frozen entry point supplies the
-    explicit binary path and keeps Playwright pointed at its bundled browser.
-    The app config is copied once to writable app data because Spiritus treats
-    installed resources as read-only and provider/model settings are mutable.
-    """
-    if not is_bundled():
-        return
-
-    root = _bundle_root()
-    binary_name = "opencode.exe" if sys.platform == "win32" else "opencode"
-    bundled_engine = root / "engine" / binary_name
-    if bundled_engine.is_file():
-        os.environ.setdefault(engine.ENV_BIN, str(bundled_engine))
-
-    bundled_browsers = root / "ms-playwright"
-    if bundled_browsers.is_dir():
-        os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", str(bundled_browsers))
-
-    data_root = app_data_dir("persona")
-    shipped_config = root / "opencode.json"
-    installed_config = data_root / "opencode.json"
-    if shipped_config.is_file() and not installed_config.exists():
-        shutil.copy2(shipped_config, installed_config)
-
-
-def _suppress_windows_subprocess_consoles() -> None:
-    """Prevent console-subsystem children from flashing windows in the app.
-
-    The installed executable is a windowed PyInstaller build, but OpenCode is
-    a native Windows console executable. Without these process flags Windows
-    creates a visible console for the engine and other child tools before the
-    Persona window is ready. Keep this scoped to frozen Windows builds so source
-    development retains normal subprocess behavior.
-    """
-    if not is_bundled() or sys.platform != "win32":
-        return
-
-    import subprocess
-
-    if getattr(subprocess, "_persona_hidden_console", False):
-        return
-
-    base_popen = subprocess.Popen
-    no_window = subprocess.CREATE_NO_WINDOW
-    new_console = subprocess.CREATE_NEW_CONSOLE
-    detached = subprocess.DETACHED_PROCESS
-
-    class HiddenConsolePopen(base_popen):
-        def __init__(self, *args, **kwargs):
-            flags = kwargs.get("creationflags") or 0
-            if not flags & (new_console | detached):
-                kwargs["creationflags"] = flags | no_window
-                if kwargs.get("startupinfo") is None:
-                    startupinfo = subprocess.STARTUPINFO()
-                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                    startupinfo.wShowWindow = subprocess.SW_HIDE
-                    kwargs["startupinfo"] = startupinfo
-            super().__init__(*args, **kwargs)
-
-    subprocess.Popen = HiddenConsolePopen
-    subprocess._persona_hidden_console = True
 
 
 def _verify_bundle() -> None:
@@ -107,6 +39,11 @@ def _verify_bundle() -> None:
     bundled_engine = root / "engine" / binary_name
     if not bundled_engine.is_file():
         raise SystemExit(f"missing bundled OpenCode engine: {bundled_engine}")
+    resolved_engine = engine.resolve()
+    if resolved_engine != bundled_engine:
+        raise SystemExit(
+            f"Spiritus did not resolve the bundled engine: {resolved_engine}"
+        )
     version = engine.binary_version(bundled_engine)
     if not version:
         raise SystemExit(f"bundled OpenCode engine did not report a version: {bundled_engine}")
@@ -116,11 +53,15 @@ def _verify_bundle() -> None:
         raise SystemExit("missing bundled scanner script")
     if not (root / "ms-playwright").is_dir():
         raise SystemExit("missing bundled Playwright browsers")
+    browser_path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+    if not browser_path or Path(browser_path).resolve() != (root / "ms-playwright").resolve():
+        raise SystemExit(
+            "Spiritus did not configure the bundled Playwright browser path"
+        )
+    seeded_config = project_root(Path(__file__).resolve().parent, "persona") / "opencode.json"
+    if not seeded_config.is_file():
+        raise SystemExit(f"missing seeded writable OpenCode config: {seeded_config}")
     print(f"Persona bundle OK (OpenCode {version})")
-
-
-_suppress_windows_subprocess_consoles()
-_prepare_bundled_runtime()
 
 
 APP = AppConfig(

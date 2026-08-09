@@ -5,12 +5,9 @@ $Version = if ($env:PERSONA_VERSION) { $env:PERSONA_VERSION } else {
     (Get-Content (Join-Path $Root "pyproject.toml") | Select-String '^version\s*=\s*"([^"]+)"$').Matches.Groups[1].Value
 }
 
-uv run python (Join-Path $Root "packaging\build.py") --platform windows
-
-$BundleCheck = Join-Path $Root "dist\Persona\Persona.exe"
-& $BundleCheck --check-bundle
+& (Join-Path $Root "packaging\spiritus-bundle-windows.ps1")
 if ($LASTEXITCODE -ne 0) {
-    throw "Frozen Persona bundle verification failed"
+    throw "Spiritus Persona bundle workflow failed"
 }
 
 $Iscc = Get-Command iscc -ErrorAction SilentlyContinue

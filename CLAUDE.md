@@ -30,7 +30,7 @@ precedence over the cache.
 that object and nothing else app-specific.
 
 Core is a dependency, not vendored source. Persona pins the released Spiritus
-tag `v0.0.2` through a direct Git dependency, so local development and CI use
+tag `v0.0.31` through a direct Git dependency, so local development and CI use
 the same install contract. Edits to a sibling `../spiritus` checkout do not
 silently change Persona.
 
@@ -86,4 +86,5 @@ git -c user.name="Dekode1859" -c user.email="prateekdwivedi30@gmail.com" commit 
 
 Python 3.11+, PyWebView, OpenCode CLI, Playwright (browser automation),
 vanilla JS + Shoelace 2.19.1 + Lucide on the front end (no build step), `uv` for
-dependencies, PyInstaller for bundles.
+dependencies, Spiritus's manifest-driven bundle builder, Inno Setup, and DMG
+creation.

@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 from spiritus.bridge import Bridge
+from spiritus.runtime.windows import hidden_console_kwargs
 
 from scanner import store
 
@@ -46,6 +47,7 @@ class PersonaBridge(Bridge):
             result = subprocess.run(
                 [sys.executable, str(_SCAN_SCRIPT), profile_dir, json.dumps(settings)],
                 capture_output=True, text=True, timeout=240,
+                **hidden_console_kwargs(),
             )
         except subprocess.TimeoutExpired:
             return {"ok": False, "error": "Scan timed out (>240s)"}

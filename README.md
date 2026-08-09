@@ -41,15 +41,18 @@ same machine. Provider setup is available from the Settings panel.
 
 ## How it consumes Spiritus
 
-`pyproject.toml` depends on Spiritus `v0.0.2` directly from its Git tag and on
-Playwright. `main.py` imports `spiritus` like any other installed package —
+`pyproject.toml` depends on Spiritus `v0.0.31` with its bundle extra directly
+from the Git tag and on Playwright. `main.py` imports `spiritus` like any other installed package —
 there is no `sys.path` manipulation and no vendored copy of the Spiritus
 runtime.
 
-The release build uses PyInstaller. It ships Spiritus, the pinned OpenCode
-engine, the Chromium browser used by scanner/PDF workflows, Persona's UI and
-configuration in one Windows installer or macOS DMG. Installed app data and
-credentials remain in the platform's normal per-user application-data folder.
+The release build delegates PyInstaller bundle assembly and manifest
+verification to Spiritus. Persona supplies its UI, configuration, OpenCode
+engine payload, and Playwright browser payload through `spiritus.bundle.toml`.
+The resulting bundle ships Spiritus, the pinned OpenCode engine, Chromium, and
+Persona's resources in one Windows installer or macOS DMG. Installed app data
+and credentials remain in the platform's normal per-user application-data
+folder.
 Public releases use the clean `v<version>` tag and `Persona <version>` title;
 CI build numbers are not exposed in the release name.
 

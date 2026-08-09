@@ -1,0 +1,31 @@
+# Spiritus bundle specification. Keep this file in version control.
+format = 1
+platforms = ["windows", "macos"]
+entrypoint = "main.py"
+name = "Persona"
+app_id = "persona"
+version = "0.1.0"
+console = false
+bundle_identifier = "com.dekode.persona"
+
+datas = [
+  "ui=ui",
+  "opencode.json=.",
+  "scanner/linkedin_scan.py=scanner",
+  "packaging/build-assets/ms-playwright=ms-playwright",
+]
+binaries = [
+  "packaging/build-assets/engine/{engine_binary}=engine",
+]
+collect_packages = ["playwright", "webview"]
+hidden_imports = []
+
+[runtime_env_paths]
+PLAYWRIGHT_BROWSERS_PATH = "ms-playwright"
+
+[seed_files]
+"opencode.json" = "opencode.json"
+
+[hooks]
+prepare = ["uv", "run", "python", "packaging/prepare-assets.py"]
+verify = ["{executable}", "--check-bundle"]
