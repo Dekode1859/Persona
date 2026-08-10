@@ -20,6 +20,7 @@ from spiritus import engine
 from spiritus.runtime.paths import is_bundled, project_root
 
 from app_bridge import PersonaBridge
+from persona_updates import check_for_updates
 
 
 def _bundle_root() -> Path:
@@ -83,5 +84,9 @@ APP = AppConfig(
 if __name__ == "__main__":
     if "--check-bundle" in sys.argv:
         _verify_bundle()
+    elif "--check-updates" in sys.argv:
+        import json
+
+        print(json.dumps(check_for_updates(), sort_keys=True))
     else:
         run(APP)

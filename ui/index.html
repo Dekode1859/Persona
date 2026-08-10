@@ -355,6 +355,19 @@
   <div class="settings-divider"></div>
 
   <div class="settings-section">
+    <h3><sl-icon library="lucide" name="refresh-cw"></sl-icon> Updates</h3>
+    <p class="settings-hint">Check Persona's published GitHub release for the latest version.</p>
+    <div class="settings-row">
+      <sl-button id="btn-check-updates">
+        <sl-icon slot="prefix" library="lucide" name="refresh-cw"></sl-icon> Check for updates
+      </sl-button>
+    </div>
+    <div id="updates-status" class="status-text"></div>
+  </div>
+
+  <div class="settings-divider"></div>
+
+  <div class="settings-section">
     <h3><sl-icon library="lucide" name="monitor"></sl-icon> Job Site Sign-in</h3>
     <p class="settings-hint">Sign in once so job links that require an account - LinkedIn especially - can be read when you paste them.</p>
     <div id="browser-profile-section-content"></div>

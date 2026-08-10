@@ -15,11 +15,15 @@ from spiritus.bridge import Bridge
 from spiritus.runtime.windows import hidden_console_kwargs
 
 from scanner import store
+from persona_updates import check_for_updates
 
 _SCAN_SCRIPT = Path(__file__).resolve().parent / "scanner" / "linkedin_scan.py"
 
 
 class PersonaBridge(Bridge):
+    def updates_check(self) -> dict:
+        return check_for_updates()
+
     def scanner_get_settings(self) -> dict:
         return store.get_settings(self._workspace)
 

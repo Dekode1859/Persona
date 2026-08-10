@@ -41,7 +41,7 @@ same machine. Provider setup is available from the Settings panel.
 
 ## How it consumes Spiritus
 
-`pyproject.toml` depends on Spiritus `v0.0.31` with its bundle extra directly
+`pyproject.toml` depends on Spiritus `v0.0.33` with its bundle extra directly
 from the Git tag and on Playwright. `main.py` imports `spiritus` like any other installed package —
 there is no `sys.path` manipulation and no vendored copy of the Spiritus
 runtime.
@@ -55,6 +55,11 @@ and credentials remain in the platform's normal per-user application-data
 folder.
 Public releases use the clean `v<version>` tag and `Persona <version>` title;
 CI build numbers are not exposed in the release name.
+
+Persona also uses Spiritus's update configuration to check the public GitHub
+release from Settings. The first updater milestone is intentionally check-only:
+it reports the latest fetched Persona version without downloading or launching
+an installer.
 
 Spiritus carries no knowledge of jobs, resumes, or profiles. Everything domain-
 specific lives here, which keeps the runtime reusable.

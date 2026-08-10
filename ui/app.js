@@ -987,6 +987,7 @@ const bridge = (() => {
     browserCheckGoogleLogin:  ()    => call('browser_check_google_login'),
     browserResetProfile:      ()    => call('browser_reset_profile'),
     createSession:            (title = '') => call('create_session', title),
+    updatesCheck:             ()    => call('updates_check'),
     sendMessage:              (sessionId, agent, model, text) =>
       call('send_message', sessionId, agent || '', model || null, text),
     sessionHistory:           (sessionId) => call('session_history', sessionId),
@@ -5172,6 +5173,37 @@ function openSettings() {
   loadBrowserProfileStatus().then(renderBrowserProfileSettings);
 }
 
+async function checkForUpdates() {
+  const button = document.getElementById('btn-check-updates');
+  const status = document.getElementById('updates-status');
+  if (!button || !status) return;
+  button.disabled = true;
+  status.textContent = 'Checking…';
+  status.className = 'status-text status-info';
+  try {
+    const result = await bridge.updatesCheck();
+    const latest = result.version || result.current_version || 'unknown';
+    if (result.status === 'available') {
+      status.textContent = `Latest release: Persona ${latest}. An update is available.`;
+      status.className = 'status-text status-ok';
+    } else if (result.status === 'current') {
+      status.textContent = `Latest release: Persona ${latest}. Persona is up to date.`;
+      status.className = 'status-text status-ok';
+    } else if (result.status === 'no_compatible_asset') {
+      status.textContent = `Latest release: Persona ${latest}, but no installer matches this platform.`;
+      status.className = 'status-text status-err';
+    } else {
+      status.textContent = result.error || `Update check: ${result.status}`;
+      status.className = 'status-text status-err';
+    }
+  } catch (e) {
+    status.textContent = `Update check failed: ${e.message}`;
+    status.className = 'status-text status-err';
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function loadProviders() {
   try {
     const data = await bridge.getProviders();
@@ -6004,6 +6036,7 @@ function wire() {
   document.getElementById('btn-close-analysis-history').addEventListener('click',
     () => document.getElementById('analysis-history-dialog').hide());
   document.getElementById('btn-save-key').addEventListener('click', saveKey);
+  document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
   document.getElementById('btn-set-model').addEventListener('click', setModel);
   document.getElementById('connected-list').addEventListener('click', e => {
     const btn = e.target.closest('.provider-tag-remove');

@@ -11,6 +11,7 @@ bundle_identifier = "com.dekode.persona"
 datas = [
   "ui=ui",
   "opencode.json=.",
+  "spiritus.bundle.toml=.",
   "scanner/linkedin_scan.py=scanner",
   "packaging/build-assets/ms-playwright=ms-playwright",
 ]
@@ -25,6 +26,20 @@ PLAYWRIGHT_BROWSERS_PATH = "ms-playwright"
 
 [seed_files]
 "opencode.json" = "opencode.json"
+
+[updates]
+enabled = true
+channel = "stable"
+versioning = "semver"
+
+[updates.source]
+type = "github"
+repository = "Dekode1859/Persona"
+
+[updates.assets]
+windows_x86_64 = "Persona-Setup-{version}.exe"
+macos_x86_64 = "Persona-{version}-macos.dmg"
+macos_arm64 = "Persona-{version}-macos.dmg"
 
 [hooks]
 prepare = ["uv", "run", "python", "packaging/prepare-assets.py"]
