@@ -322,7 +322,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "playwright", specifier = ">=1.40.0" },
-    { name = "spiritus", extras = ["bundle"], git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.31" },
+    { name = "spiritus", extras = ["bundle"], git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.32" },
 ]
 
 [[package]]
@@ -738,8 +738,8 @@ wheels = [
 
 [[package]]
 name = "spiritus"
-version = "0.0.31"
-source = { git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.31#2343a6c01d5c09619fc6de480462cf80509589d9" }
+version = "0.0.32"
+source = { git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.32#c5c4e3e50cd8b2c30b397e34aedd5b29ffaf228f" }
 dependencies = [
     { name = "jsonschema" },
     { name = "pywebview" },
