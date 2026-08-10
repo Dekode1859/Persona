@@ -987,8 +987,8 @@ const bridge = (() => {
     browserCheckGoogleLogin:  ()    => call('browser_check_google_login'),
     browserResetProfile:      ()    => call('browser_reset_profile'),
     createSession:            (title = '') => call('create_session', title),
-    updatesCheck:             ()    => call('updates_check'),
-    updatesStage:             ()    => call('updates_stage'),
+    updatesCheck:             ()     => call('updates_check'),
+    updatesStage:             ()     => call('updates_stage'),
     updatesLaunch:            (path) => call('updates_launch', path),
     sendMessage:              (sessionId, agent, model, text) =>
       call('send_message', sessionId, agent || '', model || null, text),
@@ -5175,90 +5175,126 @@ function openSettings() {
   loadBrowserProfileStatus().then(renderBrowserProfileSettings);
 }
 
-let stagedUpdatePath = null;
+const updateFlow = {
+  state: 'idle',
+  stagedPath: null,
+  version: null,
+};
 
-function setUpdateActionVisibility({ stage = false, launch = false } = {}) {
-  const stageButton = document.getElementById('btn-stage-update');
-  const launchButton = document.getElementById('btn-launch-update');
-  if (stageButton) stageButton.hidden = !stage;
-  if (launchButton) launchButton.hidden = !launch;
+function renderUpdateFlow(state, details = {}) {
+  const button = document.getElementById('btn-update-action');
+  const status = document.getElementById('updates-status');
+  if (!button || !status) return;
+  updateFlow.state = state;
+  if (details.version) updateFlow.version = details.version;
+  const version = details.version || updateFlow.version || 'latest';
+  const busy = ['checking', 'downloading', 'launching'].includes(state);
+  button.disabled = busy;
+  const downloadAction = ['available', 'download_error'].includes(state);
+  const installAction = ['ready', 'launch_error'].includes(state);
+  button.variant = downloadAction ? 'primary' : installAction ? 'success' : 'default';
+  const labels = {
+    idle: 'Check for updates',
+    checking: 'Checking…',
+    current: 'Check again',
+    available: 'Download update',
+    downloading: 'Downloading…',
+    ready: 'Install update',
+    launching: 'Launching…',
+    download_error: 'Download again',
+    launch_error: 'Install again',
+    no_compatible_asset: 'Check again',
+    error: 'Try again',
+  };
+  const icon = downloadAction ? 'download' : installAction ? 'circle-check' : 'refresh-cw';
+  button.innerHTML = `<sl-icon slot="prefix" library="lucide" name="${icon}"></sl-icon> ${labels[state] || labels.error}`;
+
+  const messages = {
+    idle: '',
+    checking: 'Checking the published Persona release…',
+    current: `Persona ${details.current_version || 'this version'} is up to date. Latest release: ${version}.`,
+    available: `Persona ${version} is available. Download it to continue.`,
+    downloading: 'Downloading and verifying the installer…',
+    ready: `Persona ${version} is downloaded and verified. Install it when ready.`,
+    launching: 'Starting the installer. Persona will close now.',
+    download_error: details.message || 'The update could not be downloaded. Check your connection and try again.',
+    launch_error: details.message || 'The installer could not be started. Try again.',
+    no_compatible_asset: `Persona ${version} is available, but no installer matches this platform.`,
+    error: details.message || 'Persona could not check for updates. Try again.',
+  };
+  status.textContent = details.message || messages[state] || '';
+  const errorState = ['download_error', 'launch_error', 'no_compatible_asset', 'error'].includes(state);
+  status.className = `status-text ${
+    ['current', 'available', 'ready'].includes(state) && !errorState ? 'status-ok' :
+    ['checking', 'downloading', 'launching'].includes(state) ? 'status-info' :
+    state === 'idle' ? '' : 'status-err'
+  }`;
+}
+
+function applyUpdateCheckResult(result) {
+  updateFlow.stagedPath = null;
+  updateFlow.version = result.version || result.current_version || null;
+  if (result.status === 'available') {
+    renderUpdateFlow('available', { version: result.version });
+  } else if (result.status === 'current') {
+    renderUpdateFlow('current', { version: result.version, current_version: result.current_version });
+  } else if (result.status === 'no_compatible_asset') {
+    renderUpdateFlow('no_compatible_asset', { version: result.version });
+  } else {
+    renderUpdateFlow('error', { message: result.error || `Update check returned ${result.status}.` });
+  }
 }
 
 async function checkForUpdates() {
-  const button = document.getElementById('btn-check-updates');
-  const status = document.getElementById('updates-status');
-  if (!button || !status) return;
-  stagedUpdatePath = null;
-  setUpdateActionVisibility();
-  button.disabled = true;
-  status.textContent = 'Checking…';
-  status.className = 'status-text status-info';
+  renderUpdateFlow('checking');
   try {
-    const result = await bridge.updatesCheck();
-    const latest = result.version || result.current_version || 'unknown';
-    if (result.status === 'available') {
-      status.textContent = `Latest release: Persona ${latest}. An update is available.`;
-      status.className = 'status-text status-ok';
-      setUpdateActionVisibility({ stage: true });
-    } else if (result.status === 'current') {
-      status.textContent = `Latest release: Persona ${latest}. Persona is up to date.`;
-      status.className = 'status-text status-ok';
-    } else if (result.status === 'no_compatible_asset') {
-      status.textContent = `Latest release: Persona ${latest}, but no installer matches this platform.`;
-      status.className = 'status-text status-err';
-    } else {
-      status.textContent = result.error || `Update check: ${result.status}`;
-      status.className = 'status-text status-err';
-    }
+    applyUpdateCheckResult(await bridge.updatesCheck());
   } catch (e) {
-    status.textContent = `Update check failed: ${e.message}`;
-    status.className = 'status-text status-err';
-  } finally {
-    button.disabled = false;
+    renderUpdateFlow('error', { message: `Update check failed: ${e.message}` });
   }
 }
 
 async function stagePersonaUpdate() {
-  const button = document.getElementById('btn-stage-update');
-  const status = document.getElementById('updates-status');
-  if (!button || !status) return;
-  button.disabled = true;
-  status.textContent = 'Downloading and verifying installer…';
-  status.className = 'status-text status-info';
+  renderUpdateFlow('downloading');
   try {
     const result = await bridge.updatesStage();
-    if (result.status !== 'available' || !result.staged_path) {
-      throw new Error(result.error || 'The update could not be downloaded.');
+    if (result.status !== 'available') {
+      if (result.status === 'error') {
+        renderUpdateFlow('download_error', { message: result.error || 'The update could not be downloaded. Try again.' });
+        return;
+      }
+      applyUpdateCheckResult(result);
+      return;
     }
-    stagedUpdatePath = result.staged_path;
-    const version = result.version || 'latest';
-    status.textContent = `Persona ${version} is downloaded and verified. Ready to install.`;
-    status.className = 'status-text status-ok';
-    setUpdateActionVisibility({ launch: true });
+    if (!result.staged_path) {
+      throw new Error('The installer was not returned by the update service.');
+    }
+    updateFlow.stagedPath = result.staged_path;
+    renderUpdateFlow('ready', { version: result.version });
   } catch (e) {
-    status.textContent = `Update download failed: ${e.message}`;
-    status.className = 'status-text status-err';
-  } finally {
-    button.disabled = false;
+    renderUpdateFlow('download_error', { message: `The update could not be downloaded. ${e.message}` });
   }
 }
 
 async function launchPersonaUpdate() {
-  const button = document.getElementById('btn-launch-update');
-  const status = document.getElementById('updates-status');
-  if (!button || !status || !stagedUpdatePath) return;
-  button.disabled = true;
-  status.textContent = 'Launching installer…';
-  status.className = 'status-text status-info';
-  try {
-    await bridge.updatesLaunch(stagedUpdatePath);
-    status.textContent = 'Installer launched. Persona is closing.';
-    status.className = 'status-text status-ok';
-  } catch (e) {
-    status.textContent = `Could not launch installer: ${e.message}`;
-    status.className = 'status-text status-err';
-    button.disabled = false;
+  if (!updateFlow.stagedPath) {
+    renderUpdateFlow('error', { message: 'Download an update before installing it.' });
+    return;
   }
+  renderUpdateFlow('launching');
+  try {
+    await bridge.updatesLaunch(updateFlow.stagedPath);
+  } catch (e) {
+    renderUpdateFlow('launch_error', { message: `The installer could not be started. ${e.message}` });
+  }
+}
+
+async function runUpdateAction() {
+  if (['checking', 'downloading', 'launching'].includes(updateFlow.state)) return;
+  if (updateFlow.state === 'available') return stagePersonaUpdate();
+  if (['ready', 'launch_error'].includes(updateFlow.state)) return launchPersonaUpdate();
+  if (updateFlow.state === 'download_error') return stagePersonaUpdate();
+  return checkForUpdates();
 }
 
 async function loadProviders() {
@@ -6093,9 +6129,7 @@ function wire() {
   document.getElementById('btn-close-analysis-history').addEventListener('click',
     () => document.getElementById('analysis-history-dialog').hide());
   document.getElementById('btn-save-key').addEventListener('click', saveKey);
-  document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
-  document.getElementById('btn-stage-update').addEventListener('click', stagePersonaUpdate);
-  document.getElementById('btn-launch-update').addEventListener('click', launchPersonaUpdate);
+  document.getElementById('btn-update-action').addEventListener('click', runUpdateAction);
   document.getElementById('btn-set-model').addEventListener('click', setModel);
   document.getElementById('connected-list').addEventListener('click', e => {
     const btn = e.target.closest('.provider-tag-remove');

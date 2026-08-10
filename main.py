@@ -18,7 +18,6 @@ from pathlib import Path
 from spiritus import run, AppConfig, WorkspaceFolder
 from spiritus import engine
 from spiritus.runtime.paths import is_bundled, project_root
-from spiritus.runtime.windows import hidden_console_kwargs
 
 from app_bridge import PersonaBridge
 from persona_updates import check_for_updates
@@ -64,33 +63,6 @@ def _verify_bundle() -> None:
     if not seeded_config.is_file():
         raise SystemExit(f"missing seeded writable OpenCode config: {seeded_config}")
     print(f"Persona bundle OK (OpenCode {version})")
-
-
-def _hide_windows_shutdown_console() -> None:
-    """Keep Spiritus's Windows engine cleanup invisible during app exit."""
-    if sys.platform != "win32":
-        return
-
-    from spiritus.runtime.server import OpenCodeServer
-
-    if getattr(OpenCodeServer, "_persona_hidden_shutdown", False):
-        return
-
-    def kill_tree(self, proc):
-        import subprocess
-
-        subprocess.run(
-            ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
-            capture_output=True,
-            check=False,
-            **hidden_console_kwargs(),
-        )
-
-    OpenCodeServer._kill_tree = kill_tree
-    OpenCodeServer._persona_hidden_shutdown = True
-
-
-_hide_windows_shutdown_console()
 
 
 APP = AppConfig(
