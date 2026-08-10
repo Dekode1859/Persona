@@ -988,6 +988,8 @@ const bridge = (() => {
     browserResetProfile:      ()    => call('browser_reset_profile'),
     createSession:            (title = '') => call('create_session', title),
     updatesCheck:             ()    => call('updates_check'),
+    updatesStage:             ()    => call('updates_stage'),
+    updatesLaunch:            (path) => call('updates_launch', path),
     sendMessage:              (sessionId, agent, model, text) =>
       call('send_message', sessionId, agent || '', model || null, text),
     sessionHistory:           (sessionId) => call('session_history', sessionId),
@@ -5173,10 +5175,21 @@ function openSettings() {
   loadBrowserProfileStatus().then(renderBrowserProfileSettings);
 }
 
+let stagedUpdatePath = null;
+
+function setUpdateActionVisibility({ stage = false, launch = false } = {}) {
+  const stageButton = document.getElementById('btn-stage-update');
+  const launchButton = document.getElementById('btn-launch-update');
+  if (stageButton) stageButton.hidden = !stage;
+  if (launchButton) launchButton.hidden = !launch;
+}
+
 async function checkForUpdates() {
   const button = document.getElementById('btn-check-updates');
   const status = document.getElementById('updates-status');
   if (!button || !status) return;
+  stagedUpdatePath = null;
+  setUpdateActionVisibility();
   button.disabled = true;
   status.textContent = 'Checking…';
   status.className = 'status-text status-info';
@@ -5186,6 +5199,7 @@ async function checkForUpdates() {
     if (result.status === 'available') {
       status.textContent = `Latest release: Persona ${latest}. An update is available.`;
       status.className = 'status-text status-ok';
+      setUpdateActionVisibility({ stage: true });
     } else if (result.status === 'current') {
       status.textContent = `Latest release: Persona ${latest}. Persona is up to date.`;
       status.className = 'status-text status-ok';
@@ -5200,6 +5214,49 @@ async function checkForUpdates() {
     status.textContent = `Update check failed: ${e.message}`;
     status.className = 'status-text status-err';
   } finally {
+    button.disabled = false;
+  }
+}
+
+async function stagePersonaUpdate() {
+  const button = document.getElementById('btn-stage-update');
+  const status = document.getElementById('updates-status');
+  if (!button || !status) return;
+  button.disabled = true;
+  status.textContent = 'Downloading and verifying installer…';
+  status.className = 'status-text status-info';
+  try {
+    const result = await bridge.updatesStage();
+    if (result.status !== 'available' || !result.staged_path) {
+      throw new Error(result.error || 'The update could not be downloaded.');
+    }
+    stagedUpdatePath = result.staged_path;
+    const version = result.version || 'latest';
+    status.textContent = `Persona ${version} is downloaded and verified. Ready to install.`;
+    status.className = 'status-text status-ok';
+    setUpdateActionVisibility({ launch: true });
+  } catch (e) {
+    status.textContent = `Update download failed: ${e.message}`;
+    status.className = 'status-text status-err';
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function launchPersonaUpdate() {
+  const button = document.getElementById('btn-launch-update');
+  const status = document.getElementById('updates-status');
+  if (!button || !status || !stagedUpdatePath) return;
+  button.disabled = true;
+  status.textContent = 'Launching installer…';
+  status.className = 'status-text status-info';
+  try {
+    await bridge.updatesLaunch(stagedUpdatePath);
+    status.textContent = 'Installer launched. Persona is closing.';
+    status.className = 'status-text status-ok';
+  } catch (e) {
+    status.textContent = `Could not launch installer: ${e.message}`;
+    status.className = 'status-text status-err';
     button.disabled = false;
   }
 }
@@ -6037,6 +6094,8 @@ function wire() {
     () => document.getElementById('analysis-history-dialog').hide());
   document.getElementById('btn-save-key').addEventListener('click', saveKey);
   document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
+  document.getElementById('btn-stage-update').addEventListener('click', stagePersonaUpdate);
+  document.getElementById('btn-launch-update').addEventListener('click', launchPersonaUpdate);
   document.getElementById('btn-set-model').addEventListener('click', setModel);
   document.getElementById('connected-list').addEventListener('click', e => {
     const btn = e.target.closest('.provider-tag-remove');

@@ -56,10 +56,10 @@ folder.
 Public releases use the clean `v<version>` tag and `Persona <version>` title;
 CI build numbers are not exposed in the release name.
 
-Persona also uses Spiritus's update configuration to check the public GitHub
-release from Settings. The first updater milestone is intentionally check-only:
-it reports the latest fetched Persona version without downloading or launching
-an installer.
+Persona also uses Spiritus's update configuration from Settings to check the
+public GitHub release, download and verify the matching installer, and hand it
+off to the platform installer. Persona decides when to launch the installer;
+updates are not applied silently.
 
 Spiritus carries no knowledge of jobs, resumes, or profiles. Everything domain-
 specific lives here, which keeps the runtime reusable.
