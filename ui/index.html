@@ -356,10 +356,16 @@
 
   <div class="settings-section">
     <h3><sl-icon library="lucide" name="refresh-cw"></sl-icon> Updates</h3>
-    <p class="settings-hint">Check Persona's published GitHub release for the latest version.</p>
+    <p class="settings-hint">Check Persona's published GitHub release, download the matching installer, and install it when ready.</p>
     <div class="settings-row">
       <sl-button id="btn-check-updates">
         <sl-icon slot="prefix" library="lucide" name="refresh-cw"></sl-icon> Check for updates
+      </sl-button>
+      <sl-button id="btn-stage-update" variant="primary" hidden>
+        <sl-icon slot="prefix" library="lucide" name="download"></sl-icon> Download update
+      </sl-button>
+      <sl-button id="btn-launch-update" variant="success" hidden>
+        <sl-icon slot="prefix" library="lucide" name="download"></sl-icon> Install update
       </sl-button>
     </div>
     <div id="updates-status" class="status-text"></div>
