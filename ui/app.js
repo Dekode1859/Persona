@@ -2075,18 +2075,18 @@ function profileChecks(p) {
     { ok: !!(p.skill_buckets || []).length, weight: 10, section: 'skills', text: 'No skills listed' },
     { ok: exps.length > 0, weight: 15, section: 'experience', text: 'No roles added' },
     {
-      ok: !thinExp.length, weight: 10, section: 'experience',
+      ok: !thinExp.length, weight: exps.length ? 10 : 0, section: 'experience',
       text: `${thinExp.length} role${thinExp.length === 1 ? ' has' : 's have'} no bullets`,
       hint: thinExp.map(e => e.title || 'Untitled').join(', '),
     },
     { ok: projs.length > 0, weight: 10, section: 'projects', text: 'No projects added' },
     {
-      ok: !thinProj.length, weight: 8, section: 'projects',
+      ok: !thinProj.length, weight: projs.length ? 8 : 0, section: 'projects',
       text: `${thinProj.length} project${thinProj.length === 1 ? ' has' : 's have'} no bullets`,
       hint: thinProj.map(pr => pr.name || 'Untitled').join(', '),
     },
     {
-      ok: !noMetric.length, weight: 10, section: 'experience',
+      ok: !noMetric.length, weight: exps.length + projs.length ? 10 : 0, section: 'experience',
       text: `${noMetric.length} entr${noMetric.length === 1 ? 'y has' : 'ies have'} no numbers`,
       hint: 'Bullets with concrete results screen better',
     },
