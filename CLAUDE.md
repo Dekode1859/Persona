@@ -30,7 +30,7 @@ precedence over the cache.
 that object and nothing else app-specific.
 
 Core is a dependency, not vendored source. Persona pins the released Spiritus
-tag `v0.0.33` through a direct Git dependency, so local development and CI use
+tag `v0.0.34` through a direct Git dependency, so local development and CI use
 the same install contract. Edits to a sibling `../spiritus` checkout do not
 silently change Persona.
 

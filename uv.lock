@@ -312,7 +312,7 @@ wheels = [
 
 [[package]]
 name = "persona"
-version = "0.1.2"
+version = "0.1.3"
 source = { virtual = "." }
 dependencies = [
     { name = "playwright" },
@@ -322,7 +322,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "playwright", specifier = ">=1.40.0" },
-    { name = "spiritus", extras = ["bundle"], git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.33" },
+    { name = "spiritus", extras = ["bundle"], git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.34" },
 ]
 
 [[package]]
@@ -738,8 +738,8 @@ wheels = [
 
 [[package]]
 name = "spiritus"
-version = "0.0.33"
-source = { git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.33#5e943c572f548c4239d7dda19817f3c2b24e83fe" }
+version = "0.0.34"
+source = { git = "https://github.com/Dekode1859/Spiritus.git?rev=v0.0.34#befa94876bf41b12f0d1b8fded237cab30214f13" }
 dependencies = [
     { name = "jsonschema" },
     { name = "pywebview" },
