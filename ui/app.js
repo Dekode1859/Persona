@@ -5446,7 +5446,59 @@ const updateFlow = {
   state: 'idle',
   stagedPath: null,
   version: null,
+  currentVersion: null,
+  surface: 'settings',
 };
+
+function hideUpdateToast() {
+  document.getElementById('update-toast')?.classList.add('hidden');
+}
+
+function renderUpdateToast(state, details = {}) {
+  const toast = document.getElementById('update-toast');
+  if (!toast) return;
+  const version = details.version || updateFlow.version || 'latest';
+  const current = details.current_version || updateFlow.currentVersion || 'current version';
+  const title = {
+    available: 'Persona update available',
+    downloading: 'Updating Persona',
+    ready: 'Persona update ready',
+    launching: 'Starting Persona update',
+    download_error: 'Persona update could not download',
+    launch_error: 'Persona update could not start',
+  }[state];
+  if (!title) {
+    hideUpdateToast();
+    return;
+  }
+  let icon = 'download';
+  let copy = `Version ${version} is available. You are running ${current}.`;
+  let actions = '<sl-button size="small" data-update-toast="later">Later</sl-button>';
+  if (state === 'downloading') {
+    icon = 'refresh-cw';
+    copy = `Downloading and verifying Persona ${version}…`;
+    actions = '';
+  } else if (state === 'ready') {
+    icon = 'circle-check';
+    copy = `Persona ${version} is downloaded and verified. Apply it now, or leave it for the next time you open Persona.`;
+    actions = '<sl-button size="small" data-update-toast="later">Later</sl-button><sl-button size="small" variant="success" data-update-toast="now">Apply update now</sl-button>';
+  } else if (state === 'launching') {
+    icon = 'refresh-cw';
+    copy = 'Starting the installer. Persona will close now.';
+    actions = '';
+  } else if (state === 'download_error' || state === 'launch_error') {
+    icon = 'triangle-alert';
+    copy = details.message || 'Try again from Settings → Updates.';
+    actions = '<sl-button size="small" data-update-toast="later">Dismiss</sl-button>';
+  } else {
+    actions = '<sl-button size="small" data-update-toast="later">Update later</sl-button><sl-button size="small" variant="primary" data-update-toast="now">Update now</sl-button>';
+  }
+  const iconMarkup = ['downloading', 'launching'].includes(state)
+    ? '<span class="update-toast-spinner" aria-hidden="true"></span>'
+    : `<sl-icon library="lucide" name="${icon}"></sl-icon>`;
+  toast.innerHTML = `<div class="update-toast-title">${iconMarkup}${title}</div><div class="update-toast-copy">${escHtml(copy)}</div><div class="update-toast-actions">${actions}</div>`;
+  toast.classList.remove('hidden');
+}
 
 function renderUpdateFlow(state, details = {}) {
   const button = document.getElementById('btn-update-action');
@@ -5454,6 +5506,7 @@ function renderUpdateFlow(state, details = {}) {
   if (!button || !status) return;
   updateFlow.state = state;
   if (details.version) updateFlow.version = details.version;
+  if (details.current_version) updateFlow.currentVersion = details.current_version;
   const version = details.version || updateFlow.version || 'latest';
   const busy = ['checking', 'downloading', 'launching'].includes(state);
   button.disabled = busy;
@@ -5496,13 +5549,18 @@ function renderUpdateFlow(state, details = {}) {
     ['checking', 'downloading', 'launching'].includes(state) ? 'status-info' :
     state === 'idle' ? '' : 'status-err'
   }`;
+  if (updateFlow.surface === 'startup') renderUpdateToast(state, details);
 }
 
 function applyUpdateCheckResult(result) {
-  updateFlow.stagedPath = null;
+  if (result.status !== 'ready') updateFlow.stagedPath = null;
   updateFlow.version = result.version || result.current_version || null;
+  updateFlow.currentVersion = result.current_version || updateFlow.currentVersion;
   if (result.status === 'available') {
-    renderUpdateFlow('available', { version: result.version });
+    renderUpdateFlow('available', { version: result.version, current_version: result.current_version });
+  } else if (result.status === 'ready') {
+    updateFlow.stagedPath = result.staged_path || null;
+    renderUpdateFlow('ready', { version: result.version, current_version: result.current_version });
   } else if (result.status === 'current') {
     renderUpdateFlow('current', { version: result.version, current_version: result.current_version });
   } else if (result.status === 'no_compatible_asset') {
@@ -5512,7 +5570,8 @@ function applyUpdateCheckResult(result) {
   }
 }
 
-async function checkForUpdates() {
+async function checkForUpdates({ startup = false } = {}) {
+  updateFlow.surface = startup ? 'startup' : 'settings';
   renderUpdateFlow('checking');
   try {
     applyUpdateCheckResult(await bridge.updatesCheck());
@@ -5525,6 +5584,11 @@ async function stagePersonaUpdate() {
   renderUpdateFlow('downloading');
   try {
     const result = await bridge.updatesStage();
+    if (result.status === 'ready') {
+      updateFlow.stagedPath = result.staged_path || null;
+      renderUpdateFlow('ready', { version: result.version, current_version: result.current_version });
+      return;
+    }
     if (result.status !== 'available') {
       if (result.status === 'error') {
         renderUpdateFlow('download_error', { message: result.error || 'The update could not be downloaded. Try again.' });
@@ -5537,7 +5601,7 @@ async function stagePersonaUpdate() {
       throw new Error('The installer was not returned by the update service.');
     }
     updateFlow.stagedPath = result.staged_path;
-    renderUpdateFlow('ready', { version: result.version });
+    renderUpdateFlow('ready', { version: result.version, current_version: result.current_version });
   } catch (e) {
     renderUpdateFlow('download_error', { message: `The update could not be downloaded. ${e.message}` });
   }
@@ -6397,6 +6461,11 @@ function wire() {
     () => document.getElementById('analysis-history-dialog').hide());
   document.getElementById('btn-save-key').addEventListener('click', saveKey);
   document.getElementById('btn-update-action').addEventListener('click', runUpdateAction);
+  document.getElementById('update-toast').addEventListener('click', e => {
+    const action = e.target.closest('[data-update-toast]')?.dataset.updateToast;
+    if (action === 'later') hideUpdateToast();
+    if (action === 'now') runUpdateAction();
+  });
   document.getElementById('btn-set-model').addEventListener('click', setModel);
   document.getElementById('connected-list').addEventListener('click', e => {
     const btn = e.target.closest('.provider-tag-remove');
@@ -6520,6 +6589,7 @@ async function init() {
   const [hasProfile] = await Promise.all([loadProfile(), loadBrowserProfileStatus()]);
   if (hasProfile) renderProfileSections();
   showProfileSubview('main');
+  checkForUpdates({ startup: true });
 }
 
 init();
