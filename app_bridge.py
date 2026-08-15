@@ -102,7 +102,7 @@ class PersonaBridge(Bridge):
         if documents.is_dir():
             for path in sorted(documents.iterdir(), key=lambda item: item.name.lower()):
                 if path.is_file() and path.suffix.lower() in {".txt", ".md", ".markdown", ".json"} \
-                        and not path.name.lower().endswith(".pdf.txt"):
+                        and not path.name.lower().endswith((".pdf.txt", ".pdf.links.json")):
                     text_documents.append({
                         "name": path.name,
                         "path": f"documents/{path.name}",
