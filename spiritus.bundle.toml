@@ -4,7 +4,7 @@ platforms = ["windows", "macos"]
 entrypoint = "main.py"
 name = "Persona"
 app_id = "persona"
-version = "0.1.3"
+version = "0.1.4"
 console = false
 bundle_identifier = "com.dekode.persona"
 
@@ -18,7 +18,7 @@ datas = [
 binaries = [
   "packaging/build-assets/engine/{engine_binary}=engine",
 ]
-collect_packages = ["playwright", "webview"]
+collect_packages = ["playwright", "pypdf", "webview"]
 hidden_imports = []
 
 [runtime_env_paths]
