@@ -3,7 +3,9 @@ __pycache__/
 *.pyc
 build/
 dist/
+dist-dev/
 release/
+release-dev/
 packaging/build-assets/
 *.spec
 !packaging/persona.spec

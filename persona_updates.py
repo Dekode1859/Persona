@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -13,6 +14,7 @@ from spiritus import (
     StagedUpdate,
     SubprocessInstallerHandoff,
     UpdateCheck,
+    UpdateArtifact,
     UpdateClient,
     UpdateConfig,
     UpdateError,
@@ -22,6 +24,11 @@ from spiritus.runtime.paths import app_data_dir, is_bundled
 
 
 _STAGED_UPDATE: StagedUpdate | None = None
+_STAGED_VERSION: str | None = None
+
+
+def _app_id() -> str:
+    return os.environ.get("PERSONA_APP_ID", "persona")
 
 
 def _resource_root() -> Path:
@@ -50,7 +57,7 @@ def _config(root: Path, *, session: Any = None) -> UpdateConfig:
         payload = tomllib.load(handle)
     return UpdateConfig.from_mapping(
         payload["updates"],
-        app_id="persona",
+        app_id=_app_id(),
         current_version=_current_version(root),
         session=session,
     )
@@ -66,8 +73,84 @@ def _client(root: Path, *, session: Any = None) -> UpdateClient:
 
 def _staging_dir(root: Path) -> Path:
     if is_bundled():
-        return app_data_dir("persona") / "updates"
+        return app_data_dir(_app_id()) / "updates"
     return root / ".spiritus-update-staging"
+
+
+def _staged_manifest_path(root: Path) -> Path:
+    return _staging_dir(root) / "staged.json"
+
+
+def _staged_payload(staged: StagedUpdate, version: str, current_version: str) -> dict[str, object]:
+    return {
+        "status": "ready",
+        "available": False,
+        "current_version": current_version,
+        "version": version,
+        "staged_path": str(staged.path),
+        "staged_bytes": staged.bytes,
+        "staged_sha256": staged.sha256,
+    }
+
+
+def _load_staged_update(root: Path) -> tuple[StagedUpdate, str] | None:
+    manifest_path = _staged_manifest_path(root)
+    if not manifest_path.is_file():
+        return None
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        artifact_payload = payload["artifact"]
+        artifact = UpdateArtifact(
+            filename=str(artifact_payload["filename"]),
+            url=str(artifact_payload["url"]),
+            platform=artifact_payload.get("platform"),
+            architecture=artifact_payload.get("architecture"),
+            kind=artifact_payload.get("kind"),
+            sha256=artifact_payload.get("sha256"),
+            signature_url=artifact_payload.get("signature_url"),
+            size=artifact_payload.get("size"),
+        )
+        staged_path = Path(str(payload["path"])).resolve()
+        staging_dir = _staging_dir(root).resolve()
+        if staged_path.parent != staging_dir or not staged_path.is_file():
+            raise ValueError("staged update file is missing")
+        staged = StagedUpdate(
+            artifact=artifact,
+            path=staged_path,
+            bytes=int(payload["bytes"]),
+            sha256=str(payload["sha256"]),
+        )
+        version = str(payload["version"]).strip()
+        if not version:
+            raise ValueError("staged update version is missing")
+        return staged, version
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        manifest_path.unlink(missing_ok=True)
+        return None
+
+
+def _remember_staged_update(root: Path, staged: StagedUpdate, version: str) -> None:
+    manifest_path = _staged_manifest_path(root)
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "version": version,
+        "path": str(staged.path.resolve()),
+        "bytes": staged.bytes,
+        "sha256": staged.sha256,
+        "artifact": {
+            "filename": staged.artifact.filename,
+            "url": staged.artifact.url,
+            "platform": staged.artifact.platform,
+            "architecture": staged.artifact.architecture,
+            "kind": staged.artifact.kind,
+            "sha256": staged.artifact.sha256,
+            "signature_url": staged.artifact.signature_url,
+            "size": staged.artifact.size,
+        },
+    }
+    temporary = manifest_path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary, manifest_path)
 
 
 def _result_payload(result: UpdateCheck) -> dict[str, object]:
@@ -97,7 +180,13 @@ def _result_payload(result: UpdateCheck) -> dict[str, object]:
 
 def check_for_updates(*, session: Any = None, root: Path | None = None) -> dict[str, object]:
     """Return JSON-safe update status for the Persona bridge/UI."""
+    global _STAGED_UPDATE, _STAGED_VERSION
+
     root = root or _resource_root()
+    existing = _load_staged_update(root)
+    if existing:
+        _STAGED_UPDATE, _STAGED_VERSION = existing
+        return _staged_payload(_STAGED_UPDATE, _STAGED_VERSION, _current_version(root))
     return _result_payload(_client(root, session=session).check())
 
 
@@ -108,9 +197,13 @@ def stage_update(
     destination: Path | None = None,
 ) -> dict[str, object]:
     """Download and verify the selected installer without launching it."""
-    global _STAGED_UPDATE
+    global _STAGED_UPDATE, _STAGED_VERSION
 
     root = root or _resource_root()
+    existing = _load_staged_update(root)
+    if existing:
+        _STAGED_UPDATE, _STAGED_VERSION = existing
+        return _staged_payload(_STAGED_UPDATE, _STAGED_VERSION, _current_version(root))
     client = _client(root, session=session)
     result = client.check()
     payload = _result_payload(result)
@@ -122,6 +215,17 @@ def stage_update(
         payload.update({"status": "error", "error": str(exc)})
         return payload
     _STAGED_UPDATE = staged
+    _STAGED_VERSION = payload.get("version") if isinstance(payload.get("version"), str) else None
+    if not _STAGED_VERSION:
+        _STAGED_UPDATE = None
+        return {"status": "error", "error": "The update did not include a release version."}
+    try:
+        _remember_staged_update(root, staged, _STAGED_VERSION)
+    except OSError as exc:
+        _STAGED_UPDATE = None
+        _STAGED_VERSION = None
+        payload.update({"status": "error", "error": f"Could not save the downloaded update: {exc}"})
+        return payload
     payload.update(
         {
             "staged_path": str(staged.path),
@@ -134,9 +238,14 @@ def stage_update(
 
 def launch_staged_update(path: str | Path) -> dict[str, object]:
     """Launch the verified installer and close Persona so it can update safely."""
-    global _STAGED_UPDATE
+    global _STAGED_UPDATE, _STAGED_VERSION
 
     staged = _STAGED_UPDATE
+    if staged is None:
+        loaded = _load_staged_update(_resource_root())
+        if loaded:
+            staged, _STAGED_VERSION = loaded
+            _STAGED_UPDATE = staged
     if staged is None:
         raise UpdateInstallerError("no verified installer is ready to launch")
     candidate = Path(path).resolve()
@@ -149,6 +258,8 @@ def launch_staged_update(path: str | Path) -> dict[str, object]:
         SubprocessInstallerHandoff().launch(staged)
 
     _STAGED_UPDATE = None
+    _STAGED_VERSION = None
+    _staged_manifest_path(_resource_root()).unlink(missing_ok=True)
     try:
         import webview
 

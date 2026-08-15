@@ -1,18 +1,18 @@
-# Spiritus bundle specification. Keep this file in version control.
+# Development bundle specification. This installs beside production Persona.
 format = 1
 platforms = ["windows", "macos"]
-entrypoint = "main.py"
-name = "Persona"
-app_id = "persona"
-version = "0.1.6"
+entrypoint = "main_dev.py"
+name = "PersonaDev"
+app_id = "persona-dev"
+version = "0.1.6-dev"
 console = false
-bundle_identifier = "com.dekode.persona"
+bundle_identifier = "com.dekode.persona.dev"
 
 datas = [
   "ui=ui",
   "schemas=schemas",
   "opencode.json=.",
-  "spiritus.bundle.toml=.",
+  "spiritus.bundle.dev.toml=spiritus.bundle.toml",
   "scanner/linkedin_scan.py=scanner",
   "packaging/build-assets/ms-playwright=ms-playwright",
 ]
