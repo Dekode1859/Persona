@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from app_bridge import PersonaBridge
+from main import _sync_bundled_agent_config
 from spiritus.config import AppConfig, WorkspaceFolder
 
 
@@ -109,6 +110,53 @@ class ProfileImportRunTests(unittest.TestCase):
     def test_profile_schema_is_declared_as_a_bundle_resource(self) -> None:
         spec = tomllib.loads(Path("spiritus.bundle.toml").read_text(encoding="utf-8"))
         self.assertIn("schemas=schemas", spec["datas"])
+
+    def test_profile_pdf_agent_is_declared_in_the_packaged_config(self) -> None:
+        config = json.loads(Path("opencode.json").read_text(encoding="utf-8"))
+        self.assertIn("profile-pdf", config["agent"])
+        spec = tomllib.loads(Path("spiritus.bundle.toml").read_text(encoding="utf-8"))
+        self.assertIn("opencode.json=.", spec["datas"])
+        self.assertEqual(spec["seed_files"]["opencode.json"], "opencode.json")
+
+    def test_bundled_agents_migrate_into_existing_app_data(self) -> None:
+        bundle = self.root / "bundle"
+        app_data = self.root / "app-data"
+        bundle.mkdir()
+        app_data.mkdir()
+        (bundle / "opencode.json").write_text(json.dumps({
+            "agent": {
+                "profile": {"prompt": "new prompt"},
+                "profile-pdf": {"mode": "primary", "prompt": "verbatim"},
+            },
+            "model": "keep-the-user-setting",
+        }), encoding="utf-8")
+        (app_data / "opencode.json").write_text(json.dumps({
+            "agent": {
+                "profile": {"prompt": "old prompt"},
+                "custom": {"prompt": "user agent"},
+            },
+            "model": "user-selected-model",
+        }), encoding="utf-8")
+
+        self.assertTrue(_sync_bundled_agent_config(bundle, app_data))
+        migrated = json.loads((app_data / "opencode.json").read_text(encoding="utf-8"))
+        self.assertEqual(migrated["agent"]["profile"], {"prompt": "new prompt"})
+        self.assertEqual(migrated["agent"]["profile-pdf"]["mode"], "primary")
+        self.assertEqual(migrated["agent"]["custom"], {"prompt": "user agent"})
+        self.assertEqual(migrated["model"], "user-selected-model")
+        self.assertFalse(_sync_bundled_agent_config(bundle, app_data))
+
+    def test_bundled_agents_are_seeded_when_app_data_is_new(self) -> None:
+        bundle = self.root / "bundle"
+        app_data = self.root / "new-app-data"
+        bundle.mkdir()
+        (bundle / "opencode.json").write_text(json.dumps({
+            "agent": {"profile-pdf": {"mode": "primary"}},
+        }), encoding="utf-8")
+
+        self.assertTrue(_sync_bundled_agent_config(bundle, app_data))
+        migrated = json.loads((app_data / "opencode.json").read_text(encoding="utf-8"))
+        self.assertIn("profile-pdf", migrated["agent"])
 
     def test_schema_failure_is_a_durable_profile_diagnostic(self) -> None:
         near_miss = _empty_profile()
