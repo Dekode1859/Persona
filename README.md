@@ -32,17 +32,21 @@ same machine. Provider setup is available from the Settings panel.
 | Path | Contents |
 |------|----------|
 | `main.py` | The whole Core↔app contract: one `AppConfig`, one `run()` call. |
-| `opencode.json` | Agent definitions (`profile`, `jd-match`, `job-extract`, `resume-composer`, `profile-writer`, `headline-writer`) and the active model. |
+| `opencode.json` | Agent definitions (`profile`, `profile-pdf`, `jd-match`, `job-extract`, `resume-composer`, `profile-writer`, `headline-writer`) and the active model. |
 | `app_bridge.py` | `PersonaBridge` — extends Core's `Bridge` with Scanner methods. |
 | `scanner/` | LinkedIn scan: URL/facet construction, card parsing, feed store. |
 | `ui/` | The front-end (vanilla JS, Shoelace, Lucide). No build step. |
 | `schemas/` | JSON schemas for the profile and job records. |
 | `workspace/` | User data — documents, profile, jobs, browser profile. Gitignored. |
 
+Profile imports accept PDF, text, Markdown, and JSON. PDF imports retain the
+original document plus its extracted selectable text; scanned and
+password-protected PDFs are reported as unsupported until OCR is added.
+
 ## How it consumes Spiritus
 
-`pyproject.toml` depends on Spiritus `v0.0.34` with its bundle extra directly
-from the Git tag and on Playwright. `main.py` imports `spiritus` like any other installed package —
+`pyproject.toml` uses the sibling Spiritus checkout as an editable dependency,
+with its bundle extra, alongside Playwright. `main.py` imports `spiritus` like any other installed package —
 there is no `sys.path` manipulation and no vendored copy of the Spiritus
 runtime.
 
