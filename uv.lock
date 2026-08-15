@@ -326,7 +326,7 @@ requires-dist = [
     { name = "jsonschema", specifier = ">=4.0.0" },
     { name = "playwright", specifier = ">=1.40.0" },
     { name = "pypdf", specifier = ">=5.0.0" },
-    { name = "spiritus", extras = ["bundle"], editable = "../spiritus" },
+    { name = "spiritus", extras = ["bundle"], git = "https://github.com/Dekode1859/Spiritus.git?rev=31d7682" },
 ]
 
 [[package]]
@@ -751,8 +751,8 @@ wheels = [
 
 [[package]]
 name = "spiritus"
-version = "0.0.34"
-source = { editable = "../spiritus" }
+version = "0.0.35"
+source = { git = "https://github.com/Dekode1859/Spiritus.git?rev=31d7682#31d76825901aad9abe1a120309759dfee0402601" }
 dependencies = [
     { name = "jsonschema" },
     { name = "pywebview" },
@@ -762,21 +762,6 @@ dependencies = [
 [package.optional-dependencies]
 bundle = [
     { name = "pyinstaller" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "jsonschema", specifier = ">=4.23.0" },
-    { name = "pyinstaller", marker = "extra == 'bundle'", specifier = ">=6.0" },
-    { name = "pywebview", specifier = ">=4.4.0" },
-    { name = "requests", specifier = ">=2.31.0" },
-]
-provides-extras = ["bundle"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "ruff", specifier = ">=0.6" },
 ]
 
 [[package]]
