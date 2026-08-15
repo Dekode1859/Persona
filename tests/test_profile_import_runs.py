@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -91,6 +92,23 @@ class ProfileImportRunTests(unittest.TestCase):
         self.assertEqual(client.body["agent"], "profile-pdf")
         self.assertEqual(client.body["format"]["type"], "json_schema")
         self.assertEqual(client.body["format"]["schema"]["title"], "Candidate Profile (v2)")
+
+    def test_pdf_link_sidecar_is_private_from_document_listing(self) -> None:
+        bridge, _ = self._bridge(_empty_profile())
+        documents = self.root / "workspace" / "documents"
+        documents.mkdir(parents=True, exist_ok=True)
+        (documents / "resume.pdf").write_bytes(b"%PDF-test")
+        (documents / "resume.pdf.txt").write_text("Resume text", encoding="utf-8")
+        (documents / "resume.pdf.links.json").write_text("[]", encoding="utf-8")
+        (documents / "notes.json").write_text("{}", encoding="utf-8")
+
+        names = [item["name"] for item in bridge.profile_list_documents()]
+
+        self.assertEqual(names, ["notes.json", "resume.pdf"])
+
+    def test_profile_schema_is_declared_as_a_bundle_resource(self) -> None:
+        spec = tomllib.loads(Path("spiritus.bundle.toml").read_text(encoding="utf-8"))
+        self.assertIn("schemas=schemas", spec["datas"])
 
     def test_schema_failure_is_a_durable_profile_diagnostic(self) -> None:
         near_miss = _empty_profile()
