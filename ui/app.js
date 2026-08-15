@@ -972,6 +972,18 @@ const bridge = (() => {
     workspaceRead:    (path)         => call('workspace_read', path),
     workspaceWrite:   (path, text)   => call('workspace_write', path, text),
     workspaceDelete:  (path)         => call('workspace_delete', path),
+    profileImportPdf: (name, dataUrl) => call('profile_import_pdf', name, dataUrl),
+    profileListDocuments: ()         => call('profile_list_documents'),
+    profileReadDocumentText: (path)  => call('profile_read_document_text', path),
+    profileDeleteDocument: (path)    => call('profile_delete_document', path),
+    profileNormalize:  (profile)     => call('profile_normalize', profile),
+    profileValidate:   (profile)     => call('profile_validate', profile),
+    profileImportRun:  (sessionId, text) => call('profile_import_run', sessionId, text),
+    profileImportDiagnostics: (runId) => call('profile_import_diagnostics', runId),
+    runArtifact:       (runId, name) => call('run_artifact', runId, name),
+    runCheckpoint:     (runId, name, detail = {}) => call('run_checkpoint', runId, name, detail),
+    runFailure:        (runId, kind, owner, message, stage, fieldPaths = []) =>
+      call('run_failure', runId, kind, owner, message, stage, fieldPaths),
     getProviders:     ()             => call('get_providers'),
     saveProviderKey:  (pid, key)     => call('save_provider_key', pid, key),
     removeProviderKey:(pid)          => call('remove_provider_key', pid),
@@ -1038,7 +1050,10 @@ async function runAgentPrompt(agentId, promptText) {
         finish(null, [...parts.values()].join(''));
       }
     };
-    eventSource.onerror = () => finish(new Error('Spiritus event stream failed'));
+      eventSource.onerror = () => {
+        const error = new Error('Spiritus event stream failed');
+        finish(error);
+      };
   });
 
   try {
@@ -1065,16 +1080,165 @@ function isTextFile(name) {
   return /\.(txt|md|markdown|json)$/i.test(name);
 }
 
+function profileImportFailure(diagnostics, runId) {
+  const failure = diagnostics?.failure || {};
+  const id = diagnostics?.run_id || runId;
+  const suffix = id ? ` (run ${id})` : '';
+  const paths = Array.isArray(failure.field_paths) && failure.field_paths.length
+    ? ` at ${failure.field_paths.join(', ')}` : '';
+  const stage = failure.stage ? ` [${failure.stage}]` : '';
+  if (failure.kind === 'output_schema_invalid') {
+    return `The extraction did not match Persona's profile format${paths}${stage}${suffix}.`;
+  }
+  if (failure.kind === 'output_parse_failed') {
+    return `Persona could not read the agent's structured extraction${stage}${suffix}.`;
+  }
+  return `${failure.message || diagnostics?.error || 'The profile import did not complete'}${stage}${suffix}.`;
+}
+
+async function runPdfProfileImport(promptText) {
+  const session = await bridge.createSession('PDF profile import');
+  let eventSource;
+  let settled = false;
+  let runId = '';
+  let completionStarted = false;
+
+  const close = () => {
+    if (eventSource) eventSource.close();
+    eventSource = null;
+  };
+  const result = new Promise((resolve, reject) => {
+    const finish = (error, value) => {
+      if (settled) return;
+      settled = true;
+      close();
+      if (error) reject(error);
+      else resolve(value);
+    };
+    eventSource = new EventSource(`/api/events?session_id=${encodeURIComponent(session.id)}`);
+    const completeFromRun = async () => {
+      if (settled || completionStarted || !runId) return;
+      completionStarted = true;
+      try {
+        const diagnostics = await bridge.profileImportDiagnostics(runId);
+        if (!diagnostics?.ok || diagnostics.status !== 'completed') {
+          const error = new Error(profileImportFailure(diagnostics, runId));
+          error.runId = diagnostics?.run_id || runId;
+          finish(error);
+          return;
+        }
+        const profile = await bridge.runArtifact(runId, 'agent.structured');
+        if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+          const error = new Error(`Persona could not find the structured profile output (run ${runId}).`);
+          error.runId = runId;
+          finish(error);
+          return;
+        }
+        await bridge.runCheckpoint(runId, 'profile.output_retrieved', {
+          artifact: 'agent.structured',
+        });
+        finish(null, { profile, runId });
+      } catch (error) {
+        error.runId = error.runId || runId;
+        finish(error);
+      }
+    };
+
+    eventSource.onmessage = async (message) => {
+      let event;
+      try { event = JSON.parse(message.data); } catch (_) { return; }
+      if (event.session_id !== session.id) return;
+      runId = event.run_id || runId;
+      if (event.type === 'run.failed') {
+        try {
+          const diagnostics = await bridge.profileImportDiagnostics(runId);
+          const error = new Error(profileImportFailure(diagnostics, runId));
+          error.runId = diagnostics?.run_id || runId;
+          finish(error);
+        } catch (_) {
+          const error = new Error(event.message || 'The profile agent failed');
+          error.runId = runId;
+          finish(error);
+        }
+      } else if (event.type === 'run.idle') await completeFromRun();
+    };
+    eventSource.onerror = async () => {
+      if (settled || completionStarted) return;
+      if (!runId) {
+        finish(new Error('Spiritus event stream failed'));
+        return;
+      }
+      // The dev server may close the SSE response after RUN.COMPLETED. Confirm
+      // the durable run before reporting a stream failure to the user.
+      try {
+        const diagnostics = await bridge.profileImportDiagnostics(runId);
+        if (diagnostics?.status === 'completed') {
+          await completeFromRun();
+          return;
+        }
+        if (diagnostics?.status === 'failed') {
+          const error = new Error(profileImportFailure(diagnostics, runId));
+          error.runId = diagnostics?.run_id || runId;
+          finish(error);
+          return;
+        }
+      } catch (_) {
+        // Fall through to the explicit stream error below.
+      }
+      const error = new Error('Spiritus event stream failed');
+      error.runId = runId;
+      finish(error);
+    };
+  });
+
+  try {
+    await new Promise((resolve, reject) => {
+      const started = Date.now();
+      const check = () => {
+        if (eventSource?.readyState === EventSource.OPEN) resolve();
+        else if (eventSource?.readyState === EventSource.CLOSED) reject(new Error('Spiritus event stream closed'));
+        else if (Date.now() - started > 10000) reject(new Error('Spiritus event stream timed out'));
+        else setTimeout(check, 25);
+      };
+      check();
+    });
+    const started = await bridge.profileImportRun(session.id, promptText);
+    runId = started?.run_id || runId;
+  } catch (error) {
+    close();
+    throw error;
+  }
+  return result;
+}
+
+function isPdfFile(name) {
+  return /\.pdf$/i.test(name);
+}
+
+function fileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
 async function handleFiles(fileList) {
   const files = Array.from(fileList || []);
   for (const f of files) {
-    if (!isTextFile(f.name)) {
-      showToast(`Skipped ${f.name} - text files only in V0 (.txt/.md/.json)`);
+    if (!isTextFile(f.name) && !isPdfFile(f.name)) {
+      showToast(`Skipped ${f.name} - supported: .pdf, .txt, .md, .json`);
       continue;
     }
     try {
-      const text = await f.text();
-      await bridge.workspaceWrite(`${DOCS_FOLDER}/${f.name}`, text);
+      if (isPdfFile(f.name)) {
+        const result = await bridge.profileImportPdf(f.name, await fileAsDataUrl(f));
+        if (!result?.ok) showToast(`Could not import ${f.name}: ${result?.error || 'Unknown error'}`);
+      } else {
+        const text = await f.text();
+        await bridge.workspaceWrite(`${DOCS_FOLDER}/${f.name}`, text);
+      }
     } catch (e) {
       showToast(`Could not read ${f.name}`);
     }
@@ -1084,7 +1248,7 @@ async function handleFiles(fileList) {
 
 async function refreshDocs() {
   try {
-    state.docs = await bridge.workspaceList(DOCS_FOLDER) || [];
+    state.docs = await bridge.profileListDocuments() || [];
   } catch (_) {
     state.docs = [];
   }
@@ -1097,7 +1261,7 @@ function renderDocs() {
   if (!state.docs.length) { el.innerHTML = ''; return; }
   el.innerHTML = state.docs.map(d => `
     <div class="doc-item">
-      <sl-icon library="lucide" name="file-text"></sl-icon>
+      <sl-icon library="lucide" name="${d.source === 'pdf' ? 'file-type-2' : 'file-text'}"></sl-icon>
       <span class="doc-name" title="${escAttr(d.name)}">${escHtml(d.name)}</span>
       <button class="doc-del" data-path="${escAttr(d.path)}" title="Remove">&times;</button>
     </div>
@@ -1112,15 +1276,28 @@ function updateGenerateEnabled() {
 
 async function gatherResumeText() {
   const parts = [];
+  const links = [];
   const pasted = document.getElementById('paste-text').value.trim();
   if (pasted) parts.push(pasted);
   for (const d of state.docs) {
     try {
-      const res = await bridge.workspaceRead(d.path);
-      if (res && res.content) parts.push(`# Document: ${d.name}\n${res.content}`);
+      const res = await bridge.profileReadDocumentText(d.path);
+      if (res && res.content) {
+        parts.push(`# Document: ${d.name}\n${res.content}`);
+        for (const link of (res.links || [])) {
+          if (!link?.url) continue;
+          links.push(link);
+        }
+      }
     } catch (_) {}
   }
-  return parts.join('\n\n---\n\n').trim();
+  if (links.length) {
+    const inventory = links.map((link, index) =>
+      `${index + 1}. ${link.label || 'Link'}: ${link.url}`
+    ).join('\n');
+    parts.push(`# Embedded PDF links (authoritative URL annotations)\n${inventory}`);
+  }
+  return { text: parts.join('\n\n---\n\n').trim(), links };
 }
 
 // ── Profile: sub-view ────────────────────────────────────────────────────────
@@ -1202,31 +1379,112 @@ function parseAgentJson(text) {
   return JSON.parse(t);
 }
 
+function applyEmbeddedPdfLinks(profile, links) {
+  const next = JSON.parse(JSON.stringify(profile || emptyProfile()));
+  const contactLinks = Array.isArray(next.contact?.links) ? next.contact.links : [];
+  next.contact = { ...(next.contact || {}), links: contactLinks };
+  for (const link of (links || [])) {
+    if (!link?.url || link.kind !== 'contact') continue;
+    const existing = next.contact.links.find(item =>
+      item?.url === link.url || item?.label?.toLowerCase() === link.label?.toLowerCase()
+    );
+    if (existing) {
+      existing.label = existing.label || link.label;
+      existing.url = existing.url || link.url;
+    } else {
+      next.contact.links.push({ label: link.label || 'Link', url: link.url });
+    }
+  }
+
+  const publicationLinks = (links || []).filter(link => link?.kind === 'publication' && link.url);
+  if (publicationLinks.length && Array.isArray(next.publications)) {
+    publicationLinks.forEach((link, index) => {
+      if (next.publications[index]) {
+        if (!next.publications[index].url) next.publications[index].url = link.url;
+      } else {
+        next.publications.push({ title: '', venue: '', year: '', url: link.url });
+      }
+    });
+  }
+  for (const link of (links || [])) {
+    if (!link?.url || link.kind !== 'other') continue;
+    if (!next.contact.links.some(item => item?.url === link.url)) {
+      next.contact.links.push({ label: link.label || 'Link', url: link.url });
+    }
+  }
+  return next;
+}
+
 async function extractAndMerge() {
-  const text = await gatherResumeText();
+  const source = await gatherResumeText();
+  const text = source.text;
   if (!text) { showToast('Add a document or paste text first.'); return; }
   setGenerating(true);
+  let importRunId = '';
   try {
-    const reply = await runAgentPrompt('profile', 'Documents:\n\n' + text);
-    let extracted;
-    try { extracted = parseAgentJson(reply); }
-    catch (_) { showToast('Could not parse extraction - try again.'); return; }
-
-    state.profile = mergeProfile(state.profile || emptyProfile(), extracted);
-    await bridge.workspaceWrite(PROFILE_PATH, JSON.stringify(state.profile, null, 2));
+    const isPdfImport = state.docs.some(doc => doc.source === 'pdf');
+    const agent = isPdfImport ? 'profile-pdf' : 'profile';
+    const contract = isPdfImport
+      ? '\n\nReturn nested fields exactly as follows: skill_buckets items use "category" and "skills"; experience uses "start" and "end"; projects use "tech" and "url". contact.links contains only objects with both "label" and "url" - omit a label when its URL is absent. The input may include an authoritative Embedded PDF links inventory. Copy every listed URL exactly, map GitHub, LinkedIn, and Google Scholar URLs to contact.links, and map publication URLs to publications[].url in source order. Never omit a URL because the visible PDF text only shows a label or publication title.\n\n'
+      : '';
+    let extractedProfile;
+    if (isPdfImport) {
+      const importResult = await runPdfProfileImport(contract + 'Documents:\n\n' + text);
+      importRunId = importResult.runId;
+      extractedProfile = applyEmbeddedPdfLinks(importResult.profile, source.links);
+    } else {
+      const reply = await runAgentPrompt(agent, contract + 'Documents:\n\n' + text);
+      let extracted;
+      try { extracted = parseAgentJson(reply); }
+      catch (_) { showImportError('Persona received an unreadable extraction. Please try again.'); return; }
+      extractedProfile = { ...emptyProfile(), ...extracted };
+    }
+    if (importRunId) await bridge.runCheckpoint(importRunId, 'profile.output_validation_requested');
+    const extractedValidation = await bridge.profileValidate(extractedProfile);
+    if (!extractedValidation?.ok) {
+      const message = `Extraction could not be saved: ${extractedValidation?.error || 'Unknown error'}`;
+      if (importRunId) await bridge.runFailure(importRunId, 'output_schema_invalid', 'application_contract', message, 'profile.output_validated');
+      showImportError(message);
+      return;
+    }
+    if (importRunId) await bridge.runCheckpoint(importRunId, 'profile.merge_requested');
+    const mergedProfile = mergeProfile(state.profile || emptyProfile(), extractedProfile);
+    if (importRunId) await bridge.runCheckpoint(importRunId, 'profile.merged');
+    const mergedValidation = await bridge.profileValidate(mergedProfile);
+    if (!mergedValidation?.ok) {
+      const message = `Profile update was rejected: ${mergedValidation?.error || 'Unknown error'}`;
+      if (importRunId) await bridge.runFailure(importRunId, 'output_schema_invalid', 'application_contract', message, 'profile.validated');
+      showImportError(message);
+      return;
+    }
+    if (importRunId) await bridge.runCheckpoint(importRunId, 'profile.validated');
+    if (importRunId) await bridge.runCheckpoint(importRunId, 'profile.persist_requested', { path: PROFILE_PATH });
+    state.profile = mergedProfile;
+    const persisted = await bridge.workspaceWrite(PROFILE_PATH, JSON.stringify(state.profile, null, 2));
+    if (!persisted?.ok) throw new Error(persisted?.error || 'Persona could not save the profile');
+    if (importRunId) await bridge.runCheckpoint(importRunId, 'profile.persisted', { path: PROFILE_PATH });
     updateSidebarPersona();
     state.editingSection = null;
     renderProfileSections();
     showProfileSubview('main');
     showToast('Profile updated.');
   } catch (e) {
-    showToast(`Extraction failed: ${e.message}`);
+    importRunId = importRunId || e.runId || '';
+    if (importRunId) {
+      try {
+        await bridge.runFailure(importRunId, 'runtime_failed', 'persona', e.message, 'profile.postprocess');
+      } catch (diagnosticError) {
+        console.error('Could not persist profile post-processing failure', diagnosticError);
+      }
+    }
+    showImportError(`Extraction failed: ${e.message}`);
   } finally {
     setGenerating(false);
   }
 }
 
 function setGenerating(on) {
+  if (on) delete document.getElementById('gen-status').dataset.error;
   const btn = document.getElementById('btn-generate');
   btn.loading = on;
   btn.disabled = on || btn.disabled;
@@ -1235,11 +1493,20 @@ function setGenerating(on) {
   document.getElementById('paste-text').disabled = on;
   document.getElementById('file-input').disabled = on;
   const s = document.getElementById('gen-status');
+  if (!on && s.dataset.error) return;
   s.classList.toggle('hidden', !on);
   if (on) s.textContent = 'Reading your documents and updating the profile… this can take a minute.';
 }
 
 // ── Profile: section rendering ────────────────────────────────────────────────
+function showImportError(message) {
+  const s = document.getElementById('gen-status');
+  s.dataset.error = 'true';
+  s.textContent = message;
+  s.classList.remove('hidden');
+  showToast(message);
+}
+
 const SECTION_META = {
   identity:       { icon: 'user-round',      label: 'Identity' },
   contact:        { icon: 'at-sign',         label: 'Contact & Links' },
@@ -5887,7 +6154,7 @@ function wire() {
   document.getElementById('btn-generate').addEventListener('click', extractAndMerge);
   document.getElementById('doc-list').addEventListener('click', async e => {
     const del = e.target.closest('.doc-del');
-    if (del) { await bridge.workspaceDelete(del.dataset.path); await refreshDocs(); }
+    if (del) { await bridge.profileDeleteDocument(del.dataset.path); await refreshDocs(); }
   });
 
   // Profile tab - section edit/save/cancel (event delegation)
