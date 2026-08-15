@@ -52,6 +52,8 @@ def _verify_bundle() -> None:
         raise SystemExit("missing bundled Persona UI")
     if not (root / "scanner" / "linkedin_scan.py").is_file():
         raise SystemExit("missing bundled scanner script")
+    if not (root / "schemas" / "profile.schema.json").is_file():
+        raise SystemExit("missing bundled profile schema")
     if not (root / "ms-playwright").is_dir():
         raise SystemExit("missing bundled Playwright browsers")
     browser_path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")

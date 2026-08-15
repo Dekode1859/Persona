@@ -10,6 +10,7 @@ bundle_identifier = "com.dekode.persona"
 
 datas = [
   "ui=ui",
+  "schemas=schemas",
   "opencode.json=.",
   "spiritus.bundle.toml=.",
   "scanner/linkedin_scan.py=scanner",
