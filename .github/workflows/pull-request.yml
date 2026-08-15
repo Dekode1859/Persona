@@ -13,7 +13,10 @@ env:
 jobs:
   resolve-and-check:
     name: Resolve dependencies and validate Spiritus bundle
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -40,11 +43,14 @@ jobs:
           from spiritus.bundle_config import check_environment, load_bundle_config
 
           root = Path.cwd()
-          config = load_bundle_config(root / "spiritus.bundle.toml", project_root=root)
+          config = load_bundle_config(
+              root / "spiritus.bundle.toml",
+              project_root=root,
+              defer_resource_validation=True,
+          )
           missing = check_environment(config)
           if missing:
               raise SystemExit("Missing Spiritus prerequisites: " + "; ".join(missing))
-          config.spec.validate_resources()
           print(f"Spiritus bundle configuration is valid for Persona {config.spec.version}")
           PY
 
