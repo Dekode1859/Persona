@@ -118,6 +118,16 @@ class ProfileImportRunTests(unittest.TestCase):
         self.assertIn("opencode.json=.", spec["datas"])
         self.assertEqual(spec["seed_files"]["opencode.json"], "opencode.json")
 
+    def test_development_bundle_has_a_separate_application_identity(self) -> None:
+        spec = tomllib.loads(Path("spiritus.bundle.dev.toml").read_text(encoding="utf-8"))
+        self.assertEqual(spec["entrypoint"], "main_dev.py")
+        self.assertEqual(spec["name"], "PersonaDev")
+        self.assertEqual(spec["app_id"], "persona-dev")
+        self.assertEqual(spec["bundle_identifier"], "com.dekode.persona.dev")
+        project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+        self.assertEqual(spec["version"], project["project"]["version"] + "-dev")
+        self.assertIn("spiritus.bundle.dev.toml=spiritus.bundle.toml", spec["datas"])
+
     def test_bundled_agents_migrate_into_existing_app_data(self) -> None:
         bundle = self.root / "bundle"
         app_data = self.root / "app-data"

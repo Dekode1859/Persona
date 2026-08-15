@@ -1,7 +1,6 @@
 """Persona's small integration surface for Spiritus update discovery."""
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import platform
@@ -26,6 +25,10 @@ from spiritus.runtime.paths import app_data_dir, is_bundled
 
 _STAGED_UPDATE: StagedUpdate | None = None
 _STAGED_VERSION: str | None = None
+
+
+def _app_id() -> str:
+    return os.environ.get("PERSONA_APP_ID", "persona")
 
 
 def _resource_root() -> Path:
@@ -54,7 +57,7 @@ def _config(root: Path, *, session: Any = None) -> UpdateConfig:
         payload = tomllib.load(handle)
     return UpdateConfig.from_mapping(
         payload["updates"],
-        app_id="persona",
+        app_id=_app_id(),
         current_version=_current_version(root),
         session=session,
     )
@@ -70,7 +73,7 @@ def _client(root: Path, *, session: Any = None) -> UpdateClient:
 
 def _staging_dir(root: Path) -> Path:
     if is_bundled():
-        return app_data_dir("persona") / "updates"
+        return app_data_dir(_app_id()) / "updates"
     return root / ".spiritus-update-staging"
 
 
@@ -150,35 +153,6 @@ def _remember_staged_update(root: Path, staged: StagedUpdate, version: str) -> N
     os.replace(temporary, manifest_path)
 
 
-def _test_mode() -> str:
-    """Return the explicit development-only update simulation mode."""
-    if is_bundled():
-        return ""
-    return os.environ.get("PERSONA_UPDATE_TEST_MODE", "").strip().lower()
-
-
-def _test_version() -> str:
-    return os.environ.get("PERSONA_UPDATE_TEST_VERSION", "99.0.0").strip() or "99.0.0"
-
-
-def _create_test_staged_update(root: Path, version: str) -> StagedUpdate:
-    payload = b"Persona development update fixture; do not install."
-    staging = _staging_dir(root)
-    staging.mkdir(parents=True, exist_ok=True)
-    path = staging / f"Persona-Setup-{version}.exe"
-    path.write_bytes(payload)
-    digest = hashlib.sha256(payload).hexdigest()
-    artifact = UpdateArtifact(
-        filename=path.name,
-        url="https://example.test/persona-development-update.exe",
-        sha256=digest,
-        size=len(payload),
-    )
-    staged = StagedUpdate(artifact, path, len(payload), digest)
-    _remember_staged_update(root, staged, version)
-    return staged
-
-
 def _result_payload(result: UpdateCheck) -> dict[str, object]:
     payload: dict[str, object] = {
         "status": result.status.value,
@@ -209,22 +183,6 @@ def check_for_updates(*, session: Any = None, root: Path | None = None) -> dict[
     global _STAGED_UPDATE, _STAGED_VERSION
 
     root = root or _resource_root()
-    mode = _test_mode()
-    current_version = _current_version(root)
-    if mode == "available":
-        return {
-            "status": "available",
-            "available": True,
-            "current_version": current_version,
-            "version": _test_version(),
-        }
-    if mode == "ready":
-        staged = _load_staged_update(root)
-        if staged is None:
-            version = _test_version()
-            staged = (_create_test_staged_update(root, version), version)
-        _STAGED_UPDATE, _STAGED_VERSION = staged
-        return _staged_payload(_STAGED_UPDATE, _STAGED_VERSION, current_version)
     existing = _load_staged_update(root)
     if existing:
         _STAGED_UPDATE, _STAGED_VERSION = existing
@@ -242,23 +200,6 @@ def stage_update(
     global _STAGED_UPDATE, _STAGED_VERSION
 
     root = root or _resource_root()
-    mode = _test_mode()
-    current_version = _current_version(root)
-    if mode in {"available", "ready"}:
-        staged = _load_staged_update(root)
-        if staged is None:
-            version = _test_version()
-            staged = (_create_test_staged_update(root, version), version)
-        _STAGED_UPDATE, _STAGED_VERSION = staged
-        return {
-            "status": "available",
-            "available": True,
-            "current_version": current_version,
-            "version": _STAGED_VERSION,
-            "staged_path": str(_STAGED_UPDATE.path),
-            "staged_bytes": _STAGED_UPDATE.bytes,
-            "staged_sha256": _STAGED_UPDATE.sha256,
-        }
     existing = _load_staged_update(root)
     if existing:
         _STAGED_UPDATE, _STAGED_VERSION = existing
@@ -311,12 +252,6 @@ def launch_staged_update(path: str | Path) -> dict[str, object]:
     if candidate != staged.path.resolve():
         raise UpdateInstallerError("installer path does not match the verified update")
 
-    if _test_mode() in {"available", "ready"}:
-        result = {"status": "launched", "staged_path": str(candidate), "test_mode": True}
-        _STAGED_UPDATE = None
-        _STAGED_VERSION = None
-        _staged_manifest_path(_resource_root()).unlink(missing_ok=True)
-        return result
     if sys.platform == "darwin":
         subprocess.Popen(["open", str(staged.path)], shell=False)
     else:

@@ -24,6 +24,10 @@ from app_bridge import PersonaBridge
 from persona_updates import check_for_updates
 
 
+_APP_ID = os.environ.get("PERSONA_APP_ID", "persona")
+_APP_TITLE = os.environ.get("PERSONA_APP_TITLE", "Persona")
+
+
 def _bundle_root() -> Path:
     """Return the read-only resource directory used by PyInstaller."""
     if is_bundled():
@@ -43,7 +47,7 @@ def _sync_bundled_agent_config(
     while preserving user-owned agents and unrelated configuration.
     """
     source_path = (bundle_root or _bundle_root()) / "opencode.json"
-    target_root = app_data_root or project_root(Path(__file__).resolve().parent, "persona")
+    target_root = app_data_root or project_root(Path(__file__).resolve().parent, _APP_ID)
     target_path = target_root / "opencode.json"
     if not source_path.is_file():
         return False
@@ -113,7 +117,7 @@ def _verify_bundle() -> None:
         raise SystemExit(
             "Spiritus did not configure the bundled Playwright browser path"
         )
-    seeded_config = project_root(Path(__file__).resolve().parent, "persona") / "opencode.json"
+    seeded_config = project_root(Path(__file__).resolve().parent, _APP_ID) / "opencode.json"
     try:
         _sync_bundled_agent_config(root, seeded_config.parent)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -130,8 +134,8 @@ def _verify_bundle() -> None:
 
 
 APP = AppConfig(
-    app_id="persona",
-    app_title="Persona",
+    app_id=_APP_ID,
+    app_title=_APP_TITLE,
     app_root=Path(__file__).resolve().parent,
     ui_dir="ui",                      # this app ships its own front-end
     workspace_dirname="workspace",
